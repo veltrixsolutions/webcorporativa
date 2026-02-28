@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 grecaptcha.reset(); // Reiniciar el captcha si hay error
             } else {
                 localStorage.setItem('jwt_token', data.token);
-                window.location.href = '/index.html'; 
+                window.location.href = '/dashboard.html'; 
             }
         } catch (error) {
             console.error('Error en la petición:', error);
