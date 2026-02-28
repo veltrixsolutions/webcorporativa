@@ -1,0 +1,17 @@
+# Archivos de entorno y seguridad
+.env
+
+# Archivos compilados de Go
+/WebCorporativa
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Carpetas del sistema operativo y VS Code
+.vscode/
+.DS_Store
+
+# Archivos temporales de Go
+go.work
