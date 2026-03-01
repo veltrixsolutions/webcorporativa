@@ -27,7 +27,7 @@ func EnviarCorreoVerificacion(correoDestino, nombreUsuario, token string) error 
 	// Nota: Resend en modo gratuito requiere que envíes desde "onboarding@resend.dev"
 	// hasta que verifiques un dominio propio.
 	params := &resend.SendEmailRequest{
-		From:    "Veltrix Solutions <onboarding@resend.dev>",
+		From:    "VeltrixSolutions <onboarding@resend.dev>",
 		To:      []string{correoDestino},
 		Subject: "Activación de Cuenta - Veltrix",
 		Html: fmt.Sprintf(`
