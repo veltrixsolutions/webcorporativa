@@ -5,51 +5,46 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"net/smtp"
 	"os"
+
+	"github.com/resend/resend-go/v2"
 )
 
-// GenerarToken crea una cadena segura y aleatoria de 32 caracteres
 func GenerarToken() string {
 	b := make([]byte, 16)
 	rand.Read(b)
 	return hex.EncodeToString(b)
 }
 
-// EnviarCorreoVerificacion manda el email usando el SMTP configurado
 func EnviarCorreoVerificacion(correoDestino, nombreUsuario, token string) error {
-	from := os.Getenv("SMTP_USER")
-	password := os.Getenv("SMTP_PASS")
-	smtpHost := "smtp.gmail.com" // Servidor de Gmail
-	smtpPort := "465"
-
+	apiKey := os.Getenv("RESEND_API_KEY")
 	appUrl := os.Getenv("APP_URL")
-	if appUrl == "" {
-		appUrl = "http://localhost:8080"
-	}
 
-	// Link que el usuario debe clickear
+	client := resend.NewClient(apiKey)
+
 	link := fmt.Sprintf("%s/api/verificar-email?token=%s", appUrl, token)
 
-	auth := smtp.PlainAuth("", from, password, smtpHost)
-
-	subject := "Subject: Activacion de Cuenta Corporativa Veltrix\n"
-	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
-	body := fmt.Sprintf(`
-		<div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f3f4f6; color: #333;">
-			<div style="background-color: white; padding: 30px; border-radius: 8px; max-width: 500px; margin: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-				<h2 style="color: #4285F4;">Bienvenido a Veltrix Solutions</h2>
-				<p>Hola <b>%s</b>,</p>
-				<p>El Super Administrador ha creado tu cuenta corporativa. Para poder iniciar sesión, necesitas verificar este correo.</p>
-				<div style="text-align: center; margin: 30px 0;">
-					<a href="%s" style="background-color: #34A853; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold;">Validar mi cuenta</a>
+	// Nota: Resend en modo gratuito requiere que envíes desde "onboarding@resend.dev"
+	// hasta que verifiques un dominio propio.
+	params := &resend.SendEmailRequest{
+		From:    "Veltrix Solutions <onboarding@resend.dev>",
+		To:      []string{correoDestino},
+		Subject: "Activación de Cuenta - Veltrix",
+		Html: fmt.Sprintf(`
+			<div style="font-family: sans-serif; padding: 20px; color: #333; background-color: #f9fafb;">
+				<div style="background-color: white; padding: 30px; border-radius: 10px; max-width: 500px; margin: auto; border: 1px solid #e5e7eb;">
+					<h2 style="color: #4285F4; text-align: center;">Bienvenido a Veltrix</h2>
+					<p>Hola <b>%s</b>,</p>
+					<p>Para completar el registro de tu cuenta corporativa, por favor confirma tu dirección de correo haciendo clic en el siguiente botón:</p>
+					<div style="text-align: center; margin: 30px 0;">
+						<a href="%s" style="background-color: #34A853; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Verificar mi cuenta</a>
+					</div>
+					<p style="font-size: 0.8rem; color: #9ca3af; text-align: center;">Si no creaste esta cuenta, puedes ignorar este correo.</p>
 				</div>
-				<p style="font-size: 0.9rem; color: #6b7280;">Por razones de seguridad, se te pedirá que cambies tu contraseña temporal durante tu primer inicio de sesión.</p>
 			</div>
-		</div>
-	`, nombreUsuario, link)
+		`, nombreUsuario, link),
+	}
 
-	msg := []byte(subject + mime + body)
-	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, []string{correoDestino}, msg)
+	_, err := client.Emails.Send(params)
 	return err
 }

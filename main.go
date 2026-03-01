@@ -110,6 +110,7 @@ func main() {
 	apiPrivada.GET("/mis-permisos/:idModulo", handlers.ObtenerMisPermisosModulo(db))
 
 	api.GET("/verificar-email", handlers.VerificarEmail(db))
+	api.POST("/cambiar-pwd", handlers.ActualizarPasswordPrimerLogin(db))
 
 	// Configuración del puerto dinámico
 	port := os.Getenv("PORT")
