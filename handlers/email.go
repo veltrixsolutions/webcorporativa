@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/resend/resend-go/v2"
@@ -21,19 +20,14 @@ func EnviarCorreoVerificacion(correoDestino, nombreUsuario, token string) error 
 	apiKey := os.Getenv("RESEND_API_KEY")
 	appUrl := os.Getenv("APP_URL")
 
-	// VALIDACIÓN CRÍTICA: Evita que el servidor se detenga si falta la API Key
-	if apiKey == "" {
-		return fmt.Errorf("la variable RESEND_API_KEY está vacía en el servidor")
-	}
-
 	client := resend.NewClient(apiKey)
 
 	link := fmt.Sprintf("%s/api/verificar-email?token=%s", appUrl, token)
 
-	// IMPORTANTE: Resend es muy estricto con el formato del 'From'
-	// Asegúrate de que no haya espacios extraños.
+	// Nota: Resend en modo gratuito requiere que envíes desde "onboarding@resend.dev"
+	// hasta que verifiques un dominio propio.
 	params := &resend.SendEmailRequest{
-		From:    "onboarding@resend.dev", // Simplificado para asegurar compatibilidad
+		From:    "VeltrixSolutions <https://kevin.rodnix.com.mx>",
 		To:      []string{correoDestino},
 		Subject: "Activación de Cuenta - Veltrix",
 		Html: fmt.Sprintf(`
@@ -41,21 +35,16 @@ func EnviarCorreoVerificacion(correoDestino, nombreUsuario, token string) error 
 				<div style="background-color: white; padding: 30px; border-radius: 10px; max-width: 500px; margin: auto; border: 1px solid #e5e7eb;">
 					<h2 style="color: #4285F4; text-align: center;">Bienvenido a Veltrix</h2>
 					<p>Hola <b>%s</b>,</p>
-					<p>Para completar el registro de tu cuenta corporativa, por favor confirma tu correo haciendo clic en el botón:</p>
+					<p>Para completar el registro de tu cuenta corporativa, por favor confirma tu dirección de correo haciendo clic en el siguiente botón:</p>
 					<div style="text-align: center; margin: 30px 0;">
 						<a href="%s" style="background-color: #34A853; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Verificar mi cuenta</a>
 					</div>
-					<p style="font-size: 0.8rem; color: #9ca3af; text-align: center;">Si no creaste esta cuenta, ignora este mensaje.</p>
+					<p style="font-size: 0.8rem; color: #9ca3af; text-align: center;">Si no creaste esta cuenta, puedes ignorar este correo.</p>
 				</div>
 			</div>
 		`, nombreUsuario, link),
 	}
 
-	sent, err := client.Emails.Send(params)
-	if err != nil {
-		return fmt.Errorf("error de Resend API: %v", err)
-	}
-
-	log.Printf("Correo enviado exitosamente. ID: %s", sent.Id)
-	return nil
+	_, err := client.Emails.Send(params)
+	return err
 }
