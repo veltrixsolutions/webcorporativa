@@ -44,10 +44,32 @@ func CrearModulo(db *sql.DB) echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Datos inválidos"})
 		}
 
-		err := db.QueryRow("INSERT INTO Modulo (strNombreModulo) VALUES ($1) RETURNING id", m.StrNombreModulo).Scan(&m.ID)
+		// Iniciamos una transacción para guardar en Modulo y en Menu al mismo tiempo
+		tx, err := db.Begin()
 		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Error interno del servidor"})
+		}
+
+		// 1. Insertar en la tabla Modulo
+		err = tx.QueryRow("INSERT INTO Modulo (strNombreModulo) VALUES ($1) RETURNING id", m.StrNombreModulo).Scan(&m.ID)
+		if err != nil {
+			tx.Rollback()
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Error al crear módulo"})
 		}
+
+		// 2. Insertar en la tabla Menu para que no quede invisible (Categoría 1 por defecto)
+		_, err = tx.Exec("INSERT INTO Menu (idMenu, idModulo) VALUES ($1, $2)", 1, m.ID)
+		if err != nil {
+			tx.Rollback()
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Error al vincular el módulo al menú"})
+		}
+
+		// Confirmar la transacción
+		err = tx.Commit()
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Error al confirmar la transacción"})
+		}
+
 		return c.JSON(http.StatusCreated, m)
 	}
 }
@@ -94,8 +116,8 @@ func ObtenerMisPermisosModulo(db *sql.DB) echo.HandlerFunc {
 
 		var p PermisoRes
 		query := `SELECT bitAgregar, bitEditar, bitConsulta, bitEliminar, bitDetalle 
-		          FROM PermisosPerfil 
-		          WHERE idPerfil = $1 AND idModulo = $2 LIMIT 1`
+                  FROM PermisosPerfil 
+                  WHERE idPerfil = $1 AND idModulo = $2 LIMIT 1`
 
 		err := db.QueryRow(query, perfilID, idModulo).Scan(&p.BitAgregar, &p.BitEditar, &p.BitConsulta, &p.BitEliminar, &p.BitDetalle)
 		if err != nil {

@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // Decodificar JWT simple (Payload en Base64)
+    // 1. Decodificar JWT
     function parseJwt(token) {
         try {
             const base64Url = token.split('.')[1];
@@ -29,24 +29,35 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // Establecer datos del usuario en la UI (Sidebar)
-    document.getElementById('user-name').textContent = userData.nombre || 'Usuario';
-    
-    // Extraer ruta de la imagen dinámicamente de la base de datos
-    const avatarImg = document.getElementById('user-avatar');
-    if (userData.ruta_imagen && userData.ruta_imagen.trim() !== "") {
-        avatarImg.src = userData.ruta_imagen;
-    } else {
-        avatarImg.src = `https://ui-avatars.com/api/?name=${userData.nombre}&background=2563eb&color=fff`;
+    // 2. Activar Botón de Cerrar Sesión (Arriba para evitar fallos si la red cae)
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) {
+        btnLogout.addEventListener('click', () => {
+            localStorage.removeItem('jwt_token');
+            window.location.href = '/login.html'; 
+        });
     }
 
-    // Cargar Menú Dinámico desde el Backend
+    // 3. Establecer datos del usuario en la UI
+    const userNameEl = document.getElementById('user-name');
+    if (userNameEl) userNameEl.textContent = userData.nombre || 'Usuario';
+    
+    const avatarImg = document.getElementById('user-avatar');
+    if (avatarImg) {
+        if (userData.ruta_imagen && userData.ruta_imagen.trim() !== "") {
+            avatarImg.src = userData.ruta_imagen;
+        } else {
+            avatarImg.src = `https://ui-avatars.com/api/?name=${userData.nombre}&background=2563eb&color=fff`;
+        }
+    }
+
+    // 4. Cargar Menú (A prueba de fallos 404)
     async function loadMenu() {
+        let menus = [];
+        
         try {
             const response = await fetch('/api/v1/menu', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             if (response.status === 401 || response.status === 403) {
@@ -55,32 +66,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            let menus = await response.json();
-
-            // BYPASS DE SUPER ADMINISTRADOR
-            // Si el menú viene vacío, pero el usuario es el Super Admin (Perfil 1),
-            // le inyectamos las herramientas del sistema por defecto.
-            if ((!menus || menus.length === 0) && userData.perfil_id === 1) {
-                menus = [{
-                    nombre_menu: "Configuración Inicial",
-                    modulos: [
-                        { id: 1, nombre: "Módulo" },
-                        { id: 2, nombre: "Perfil" },
-                        { id: 3, nombre: "Usuario" },
-                        { id: 4, nombre: "Permisos-Perfil" }
-                    ]
-                }];
+            if (response.ok) {
+                menus = await response.json();
             }
-
-            renderMenu(menus);
         } catch (error) {
-            console.error('Error cargando el menú:', error);
+            console.warn('El endpoint del menú aún no existe o falló. Intentando Bypass...');
         }
+
+        // BYPASS DE SUPER ADMINISTRADOR (ID 1)
+        // Entra aquí ya sea porque la tabla está vacía o porque el servidor dio error 404
+        if ((!menus || menus.length === 0) && userData.perfil_id === 1) {
+            menus = [{
+                nombre_menu: "Configuración Inicial",
+                modulos: [
+                    { id: 1, nombre: "Módulo" },
+                    { id: 2, nombre: "Perfil" },
+                    { id: 3, nombre: "Usuario" },
+                    { id: 4, nombre: "Permisos-Perfil" }
+                ]
+            }];
+        }
+
+        renderMenu(menus);
     }
 
-    // Renderizar el Menú en el DOM
+    // 5. Renderizar el Menú
     function renderMenu(menus) {
         const menuContainer = document.getElementById('dynamic-menu');
+        if (!menuContainer) return;
+        
         menuContainer.innerHTML = '';
 
         if (!menus || menus.length === 0) {
@@ -105,7 +119,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 item.dataset.menu = menuGroup.nombre_menu;
                 
                 item.addEventListener('click', () => {
-                    // Remover clase activa de todos los items
                     document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
                     item.classList.add('active');
                     
@@ -123,18 +136,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // Actualizar Breadcrumbs
     function updateBreadcrumbs(menuName, moduleName) {
         const breadcrumbs = document.getElementById('breadcrumbs');
-        breadcrumbs.innerHTML = `
-            <span class="crumb">Inicio</span>
-            <span class="separator">/</span>
-            <span>${menuName}</span>
-            <span class="separator">/</span>
-            <span class="crumb">${moduleName}</span>
-        `;
+        if (breadcrumbs) {
+            breadcrumbs.innerHTML = `
+                <span class="crumb">Inicio</span>
+                <span class="separator">/</span>
+                <span>${menuName}</span>
+                <span class="separator">/</span>
+                <span class="crumb">${moduleName}</span>
+            `;
+        }
     }
 
-    // Enrutador de Módulos: Carga el script correspondiente en el contenedor principal
+    // Enrutador de Módulos
     function loadModuleContent(moduleId, moduleName) {
         const container = document.getElementById('module-content');
+        if (!container) return;
         
         container.innerHTML = `
             <div class="data-card-centered">
@@ -145,19 +161,19 @@ document.addEventListener('DOMContentLoaded', () => {
         switch(moduleName) {
             case 'Perfil':
                 if (typeof PerfilModule !== 'undefined') PerfilModule.render(container);
-                else console.error("PerfilModule no está cargado.");
+                else console.error("PerfilModule no está cargado. Revisa tu HTML.");
                 break;
             case 'Usuario':
                 if (typeof UsuarioModule !== 'undefined') UsuarioModule.render(container);
-                else console.error("UsuarioModule no está cargado.");
+                else console.error("UsuarioModule no está cargado. Revisa tu HTML.");
                 break;
             case 'Permisos-Perfil':
                 if (typeof PermisoModule !== 'undefined') PermisoModule.render(container);
-                else console.error("PermisoModule no está cargado.");
+                else console.error("PermisoModule no está cargado. Revisa tu HTML.");
                 break;
             case 'Módulo':
                 if (typeof ModuloApp !== 'undefined') ModuloApp.render(container);
-                else console.error("ModuloApp no está cargado.");
+                else console.error("ModuloApp no está cargado. Revisa tu HTML.");
                 break;
             default:
                 if (typeof ModuloEstatico !== 'undefined') {
@@ -169,12 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Evento Logout
-    document.getElementById('btn-logout').addEventListener('click', () => {
-        localStorage.removeItem('jwt_token');
-        window.location.href = '/login.html';
-    });
-
-    // Iniciar carga del menú al cargar el script
+    // Iniciar
     loadMenu();
 });
