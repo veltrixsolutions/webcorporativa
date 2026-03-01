@@ -21,7 +21,7 @@ func EnviarCorreoVerificacion(correoDestino, nombreUsuario, token string) error 
 	from := os.Getenv("SMTP_USER")
 	password := os.Getenv("SMTP_PASS")
 	smtpHost := "smtp.gmail.com" // Servidor de Gmail
-	smtpPort := "587"
+	smtpPort := "465"
 
 	appUrl := os.Getenv("APP_URL")
 	if appUrl == "" {
