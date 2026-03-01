@@ -55,7 +55,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const menus = await response.json();
+            let menus = await response.json();
+
+            // BYPASS DE SUPER ADMINISTRADOR
+            // Si el menú viene vacío, pero el usuario es el Super Admin (Perfil 1),
+            // le inyectamos las herramientas del sistema por defecto.
+            if ((!menus || menus.length === 0) && userData.perfil_id === 1) {
+                menus = [{
+                    nombre_menu: "Configuración Inicial",
+                    modulos: [
+                        { id: 1, nombre: "Módulo" },
+                        { id: 2, nombre: "Perfil" },
+                        { id: 3, nombre: "Usuario" },
+                        { id: 4, nombre: "Permisos-Perfil" }
+                    ]
+                }];
+            }
+
             renderMenu(menus);
         } catch (error) {
             console.error('Error cargando el menú:', error);
@@ -120,37 +136,34 @@ document.addEventListener('DOMContentLoaded', () => {
     function loadModuleContent(moduleId, moduleName) {
         const container = document.getElementById('module-content');
         
-        // Limpiamos el contenedor antes de inyectar el nuevo módulo
         container.innerHTML = `
             <div class="data-card-centered">
                 <h2>Cargando módulo: ${moduleName}...</h2>
             </div>
         `;
 
-        // Switch para derivar a la vista correcta según el nombre del módulo en BD
         switch(moduleName) {
             case 'Perfil':
                 if (typeof PerfilModule !== 'undefined') PerfilModule.render(container);
-                else console.error("PerfilModule no está cargado. Revisa index.html");
+                else console.error("PerfilModule no está cargado.");
                 break;
             case 'Usuario':
                 if (typeof UsuarioModule !== 'undefined') UsuarioModule.render(container);
-                else console.error("UsuarioModule no está cargado. Revisa index.html");
+                else console.error("UsuarioModule no está cargado.");
                 break;
             case 'Permisos-Perfil':
                 if (typeof PermisoModule !== 'undefined') PermisoModule.render(container);
-                else console.error("PermisoModule no está cargado. Revisa index.html");
+                else console.error("PermisoModule no está cargado.");
                 break;
             case 'Módulo':
                 if (typeof ModuloApp !== 'undefined') ModuloApp.render(container);
-                else console.error("ModuloApp no está cargado. Revisa index.html");
+                else console.error("ModuloApp no está cargado.");
                 break;
             default:
-                // Si es "Principal 1.1", "Principal 2.1" o cualquier otro, es estático
                 if (typeof ModuloEstatico !== 'undefined') {
                     ModuloEstatico.render(container, moduleId, moduleName);
                 } else {
-                    console.error("ModuloEstatico no está cargado. Revisa index.html");
+                    console.error("ModuloEstatico no está cargado.");
                 }
                 break;
         }
