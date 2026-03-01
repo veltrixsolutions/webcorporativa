@@ -109,6 +109,8 @@ func main() {
 	// --- Ruta de Seguridad para Pantallas Estáticas ---
 	apiPrivada.GET("/mis-permisos/:idModulo", handlers.ObtenerMisPermisosModulo(db))
 
+	api.GET("/verificar-email", handlers.VerificarEmail(db))
+
 	// Configuración del puerto dinámico
 	port := os.Getenv("PORT")
 	if port == "" {

@@ -10,7 +10,7 @@
 <body>
     <div class="login-container">
         <div class="login-card">
-            <h1>Iniciar Sesión</h1>
+            <h1 id="titulo-login">Iniciar Sesión</h1>
             <div id="alert-box" class="alert hidden"></div>
             
             <form id="login-form">
@@ -29,6 +29,25 @@
                 </div>
 
                 <button type="submit" class="btn-submit">Ingresar</button>
+            </form>
+
+            <form id="change-pwd-form" style="display: none;">
+                <p style="text-align: center; font-size: 0.95rem; color: #4b5563; margin-bottom: 20px;">
+                    Por razones de seguridad, debes establecer una <b>contraseña definitiva</b> antes de acceder al sistema.
+                </p>
+                
+                <div class="form-group">
+                    <label for="new-pwd">Nueva Contraseña</label>
+                    <input type="password" id="new-pwd" required placeholder="Mínimo 6 caracteres">
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirm-pwd">Confirmar Contraseña</label>
+                    <input type="password" id="confirm-pwd" required placeholder="Repite la nueva contraseña">
+                </div>
+
+                <button type="submit" class="btn-submit" style="background-color: #34A853;">Actualizar y Entrar</button>
+                <button type="button" id="btn-cancel-change" style="width: 100%; margin-top: 15px; background: transparent; border: none; color: #6b7280; font-weight: 600; cursor: pointer;">Cancelar</button>
             </form>
         </div>
     </div>

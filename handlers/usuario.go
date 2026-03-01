@@ -3,6 +3,7 @@ package handlers
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -75,19 +76,31 @@ func CrearUsuario(db *sql.DB) echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Error al encriptar contraseña"})
 		}
 
-		query := `INSERT INTO Usuario (strNombreUsuario, idPerfil, strPwd, idEstadoUsuario, strCorreo, strNumeroCelular, strRutaImagen) 
-		          VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
+		// 1. Generar token de verificación único
+		tokenValidacion := GenerarToken()
 
-		err = db.QueryRow(query, u.StrNombreUsuario, u.IdPerfil, string(hashPwd), u.IdEstadoUsuario, u.StrCorreo, u.StrNumeroCelular, u.StrRutaImagen).Scan(&u.ID)
+		// 2. Insertar usuario marcando bitEmailVerificado en FALSE y Forzar Cambio Pwd en TRUE
+		query := `INSERT INTO Usuario (strNombreUsuario, idPerfil, strPwd, idEstadoUsuario, strCorreo, strNumeroCelular, strRutaImagen, strTokenVerificacion, bitEmailVerificado, bitForzarCambioPwd) 
+				  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, TRUE) RETURNING id`
+
+		err = db.QueryRow(query, u.StrNombreUsuario, u.IdPerfil, string(hashPwd), u.IdEstadoUsuario, u.StrCorreo, u.StrNumeroCelular, u.StrRutaImagen, tokenValidacion).Scan(&u.ID)
 
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "El correo ya existe o ocurrió un error"})
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "El correo o usuario ya existe."})
 		}
-		u.StrPwd = "" // Ocultar password en la respuesta
+
+		// 3. Enviar el correo de verificación (lo ejecutamos en una "goroutine" para que no congele la pantalla)
+		go func() {
+			errCorreo := EnviarCorreoVerificacion(u.StrCorreo, u.StrNombreUsuario, tokenValidacion)
+			if errCorreo != nil {
+				fmt.Println("Error al enviar el correo de validación:", errCorreo)
+			}
+		}()
+
+		u.StrPwd = "" // Ocultar password
 		return c.JSON(http.StatusCreated, u)
 	}
 }
-
 func ActualizarUsuario(db *sql.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, _ := strconv.Atoi(c.Param("id"))

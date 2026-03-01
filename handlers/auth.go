@@ -17,7 +17,7 @@ import (
 type LoginRequest struct {
 	Usuario  string `json:"usuario"`
 	Password string `json:"password"`
-	Captcha  string `json:"captcha"` // Nuevo campo para recibir el token de Google
+	Captcha  string `json:"captcha"`
 }
 
 type LoginResponse struct {
@@ -33,7 +33,6 @@ type JwtCustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-// Estructura para la respuesta de Google reCAPTCHA
 type RecaptchaResponse struct {
 	Success    bool     `json:"success"`
 	Challenge  string   `json:"challenge_ts"`
@@ -41,6 +40,13 @@ type RecaptchaResponse struct {
 	ErrorCodes []string `json:"error-codes"`
 }
 
+// Estructura para el cambio de contraseña obligatorio
+type ChangePwdReq struct {
+	UsuarioID int    `json:"usuario_id"`
+	NuevaPwd  string `json:"nueva_pwd"`
+}
+
+// --- 1. FUNCIÓN DE LOGIN PRINCIPAL ---
 func Login(db *sql.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		req := new(LoginRequest)
@@ -48,54 +54,58 @@ func Login(db *sql.DB) echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Formato de petición inválido"})
 		}
 
-		// 1. Validar el reCAPTCHA con Google
+		// Validar reCAPTCHA
 		recaptchaSecret := os.Getenv("RECAPTCHA_SECRET")
 		if recaptchaSecret != "" {
 			resp, err := http.PostForm("https://www.google.com/recaptcha/api/siteverify",
 				url.Values{"secret": {recaptchaSecret}, "response": {req.Captcha}})
-
-			if err != nil {
-				return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Error conectando con Google reCAPTCHA"})
-			}
-			defer resp.Body.Close()
-
-			var googleResp RecaptchaResponse
-			if err := json.NewDecoder(resp.Body).Decode(&googleResp); err != nil {
-				return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Error decodificando respuesta de Google"})
-			}
-
-			if !googleResp.Success {
-				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Verificación de reCAPTCHA fallida. Intenta de nuevo."})
+			if err == nil {
+				defer resp.Body.Close()
+				var googleResp RecaptchaResponse
+				json.NewDecoder(resp.Body).Decode(&googleResp)
+				if !googleResp.Success {
+					return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Verificación de reCAPTCHA fallida."})
+				}
 			}
 		}
 
-		// 2. Buscar usuario en la BD
+		// Buscar usuario en BD incluyendo banderas de seguridad
 		var id, idPerfil, idEstadoUsuario int
 		var hashPwd, strRutaImagen sql.NullString
+		var bitEmailVerificado, bitForzarCambioPwd bool
 
-		query := `SELECT id, idPerfil, strPwd, idEstadoUsuario, strRutaImagen 
+		query := `SELECT id, idPerfil, strPwd, idEstadoUsuario, strRutaImagen, bitEmailVerificado, bitForzarCambioPwd 
 				  FROM Usuario WHERE strNombreUsuario = $1`
 
-		err := db.QueryRow(query, req.Usuario).Scan(&id, &idPerfil, &hashPwd, &idEstadoUsuario, &strRutaImagen)
+		err := db.QueryRow(query, req.Usuario).Scan(&id, &idPerfil, &hashPwd, &idEstadoUsuario, &strRutaImagen, &bitEmailVerificado, &bitForzarCambioPwd)
 		if err != nil {
-			if err == sql.ErrNoRows {
-				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "El usuario no existe o las credenciales son incorrectas"})
-			}
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Error interno del servidor"})
+			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Credenciales incorrectas"})
 		}
 
-		// 3. Validar estado activo
 		if idEstadoUsuario != 1 {
 			return c.JSON(http.StatusForbidden, map[string]string{"error": "El usuario se encuentra inactivo"})
 		}
 
-		// 4. Validar contraseña
+		// REGLA: Bloqueo si el email no está verificado
+		if !bitEmailVerificado {
+			return c.JSON(http.StatusForbidden, map[string]string{"error": "Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada."})
+		}
+
 		err = bcrypt.CompareHashAndPassword([]byte(hashPwd.String), []byte(req.Password))
 		if err != nil {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Credenciales incorrectas"})
 		}
 
-		// 5. Generar Token JWT
+		// REGLA: Forzar cambio de contraseña en primer login
+		if bitForzarCambioPwd {
+			return c.JSON(http.StatusLocked, map[string]interface{}{
+				"error":           "Por razones de seguridad, debes actualizar tu contraseña temporal.",
+				"requiere_cambio": true,
+				"usuario_id":      id,
+			})
+		}
+
+		// Generar Token JWT
 		claims := &JwtCustomClaims{
 			UsuarioID:  id,
 			Nombre:     req.Usuario,
@@ -107,7 +117,6 @@ func Login(db *sql.DB) echo.HandlerFunc {
 		}
 
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
 		jwtSecret := os.Getenv("JWT_SECRET")
 		if jwtSecret == "" {
 			jwtSecret = "clave_secreta_desarrollo"
@@ -118,9 +127,58 @@ func Login(db *sql.DB) echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Error al generar el token"})
 		}
 
-		return c.JSON(http.StatusOK, LoginResponse{
-			Token:   t,
-			Mensaje: "Inicio de sesión exitoso",
-		})
+		return c.JSON(http.StatusOK, LoginResponse{Token: t, Mensaje: "Inicio de sesión exitoso"})
+	}
+}
+
+// --- 2. FUNCIÓN PARA VERIFICAR EL CORREO (El enlace del email) ---
+func VerificarEmail(db *sql.DB) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		token := c.QueryParam("token")
+		if token == "" {
+			return c.HTML(http.StatusBadRequest, "<h2 style='color:red; text-align:center;'>Token no proporcionado</h2>")
+		}
+
+		query := `UPDATE Usuario SET bitEmailVerificado = TRUE, strTokenVerificacion = NULL 
+				  WHERE strTokenVerificacion = $1 RETURNING strNombreUsuario`
+
+		var username string
+		err := db.QueryRow(query, token).Scan(&username)
+
+		if err != nil {
+			return c.HTML(http.StatusBadRequest, "<div style='text-align:center; padding: 50px;'><h2 style='color:red;'>El token es inválido o ya fue utilizado.</h2><a href='/login.html'>Ir al Login</a></div>")
+		}
+
+		htmlExito := `
+		<div style="text-align:center; padding: 50px; font-family: sans-serif;">
+			<h1 style="color: #34A853;">¡Cuenta Verificada Exitosamente!</h1>
+			<p>Gracias <b>` + username + `</b>. Tu correo corporativo ha sido validado.</p>
+			<a href="/login.html" style="display:inline-block; margin-top:20px; padding: 12px 25px; background: #4285F4; color: white; text-decoration: none; border-radius: 5px; font-weight:bold;">Ir al Login</a>
+		</div>`
+
+		return c.HTML(http.StatusOK, htmlExito)
+	}
+}
+
+// --- 3. FUNCIÓN PARA GUARDAR LA NUEVA CONTRASEÑA ---
+func ActualizarPasswordPrimerLogin(db *sql.DB) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		req := new(ChangePwdReq)
+		if err := c.Bind(req); err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Datos inválidos"})
+		}
+
+		hashPwd, err := bcrypt.GenerateFromPassword([]byte(req.NuevaPwd), bcrypt.DefaultCost)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Error al encriptar"})
+		}
+
+		// Quitamos la bandera de bloqueo
+		_, err = db.Exec("UPDATE Usuario SET strPwd = $1, bitForzarCambioPwd = FALSE WHERE id = $2", string(hashPwd), req.UsuarioID)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Error al actualizar en BD"})
+		}
+
+		return c.JSON(http.StatusOK, map[string]string{"mensaje": "Contraseña actualizada correctamente. Ya puedes iniciar sesión."})
 	}
 }
