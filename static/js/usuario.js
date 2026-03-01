@@ -5,15 +5,45 @@ const UsuarioModule = (() => {
     let perfilesDisponibles = [];
     let currentPage = 1;
     const rowsPerPage = 5;
+    
+    // Objeto para almacenar los permisos del usuario logueado en este módulo
+    let permisos = { bitAgregar: false, bitEditar: false, bitConsulta: false, bitEliminar: false, bitDetalle: false };
 
-    function renderView(container) {
+    async function renderView(container, moduleId) {
+        // 1. Obtener los permisos exactos desde el backend antes de dibujar la pantalla
+        await cargarPermisosSeguridad(moduleId);
+
+        // 2. Validación estricta: Si no tiene permiso de consulta, se bloquea la vista
+        if (!permisos.bitConsulta) {
+            container.innerHTML = `
+                <div class="data-card-centered">
+                    <h1 style="color: #ef4444;"><i class="fas fa-ban"></i> Acceso Denegado</h1>
+                    <p>No tienes los privilegios necesarios para visualizar este módulo.</p>
+                </div>
+            `;
+            return;
+        }
+
+        // 3. Renderizar botones condicionalmente
+        const btnNuevoHTML = permisos.bitAgregar ? `
+            <div style="text-align: right; margin-bottom: 20px;">
+                <button id="btn-nuevo-usuario" class="btn-submit" style="background-color: #34A853; width: auto; padding: 10px 20px;">
+                    <i class="fas fa-user-plus"></i> Nuevo Usuario
+                </button>
+            </div>
+        ` : '';
+
         container.innerHTML = `
             <div class="data-card-centered" style="max-width: 800px;">
-                <h1 style="margin-bottom: 25px; color: #1f2937; font-size: 1.8rem;">Gestión de Usuarios</h1>
+                <h1 style="margin-bottom: 10px; color: #1f2937; font-size: 1.8rem;">Directorio de Usuarios</h1>
+                <p style="margin-bottom: 20px;">Gestiona el acceso de los empleados y asigna sus perfiles.</p>
                 
                 <div id="alert-usuario" class="alert hidden"></div>
 
-                <form id="form-usuario" class="vertical-form">
+                ${btnNuevoHTML}
+
+                <form id="form-usuario" class="vertical-form" style="display: none; border-top: 2px solid #e5e7eb; padding-top: 25px;">
+                    <h2 id="form-titulo" style="margin-bottom: 20px; color: #374151;">Nuevo Usuario</h2>
                     <input type="hidden" id="usuario-id" value="">
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -24,7 +54,7 @@ const UsuarioModule = (() => {
                         
                         <div class="form-group">
                             <label for="correo-usuario">Correo Electrónico</label>
-                            <input type="email" id="correo-usuario" required autocomplete="off" style="width: 100%; padding: 15px; font-size: 1.1rem; border: 1px solid #d1d5db; border-radius: 8px;">
+                            <input type="email" id="correo-usuario" required autocomplete="off">
                         </div>
 
                         <div class="form-group">
@@ -39,7 +69,7 @@ const UsuarioModule = (() => {
 
                         <div class="form-group">
                             <label for="pwd-usuario">Contraseña</label>
-                            <input type="password" id="pwd-usuario" autocomplete="new-password" placeholder="Solo para nuevo o cambiar" style="width: 100%; padding: 15px; font-size: 1.1rem; border: 1px solid #d1d5db; border-radius: 8px;">
+                            <input type="password" id="pwd-usuario" autocomplete="new-password" placeholder="Solo para nuevo o cambiar">
                         </div>
 
                         <div class="form-group">
@@ -51,22 +81,18 @@ const UsuarioModule = (() => {
                         </div>
                     </div>
 
-                    <div class="form-group" style="margin-top: 10px;">
+                    <div class="form-group" style="margin-top: 15px;">
                         <label for="ruta-imagen">URL de la Imagen de Perfil</label>
                         <input type="text" id="ruta-imagen" placeholder="https://ejemplo.com/imagen.jpg">
-                    </div>
-                    
-                    <div id="preview-container" style="display:none; text-align: center; margin-bottom: 15px;">
-                        <img id="img-preview" src="" alt="Previsualización" style="max-height: 120px; width: 100%; object-fit: contain; border-radius: 8px; background: #f9fafb;">
                     </div>
 
                     <div class="form-actions" style="margin-top: 20px;">
                         <button type="submit" id="btn-save-usr" class="btn-submit">Guardar Usuario</button>
-                        <button type="button" id="btn-cancel-usr" class="btn-cancel hidden">Cancelar</button>
+                        <button type="button" id="btn-cancel-usr" class="btn-cancel">Cancelar</button>
                     </div>
                 </form>
 
-                <div class="table-container">
+                <div class="table-container" id="tabla-contenedor">
                     <table>
                         <thead>
                             <tr>
@@ -74,7 +100,7 @@ const UsuarioModule = (() => {
                                 <th>Usuario</th>
                                 <th>Perfil</th>
                                 <th>Estado</th>
-                                <th>Acciones</th>
+                                ${permisos.bitEditar || permisos.bitEliminar ? '<th>Acciones</th>' : ''}
                             </tr>
                         </thead>
                         <tbody id="tabla-usuarios-body"></tbody>
@@ -91,6 +117,27 @@ const UsuarioModule = (() => {
 
     function getToken() { return localStorage.getItem('jwt_token'); }
 
+    // --- CARGAR PERMISOS DEL USUARIO LOGUEADO ---
+    async function cargarPermisosSeguridad(moduleId) {
+        try {
+            // Decodificamos el token para ver si es Super Admin (Bypass total)
+            const base64Url = getToken().split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const userData = JSON.parse(decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+            
+            if (userData.perfil_id === 1) {
+                permisos = { bitAgregar: true, bitEditar: true, bitConsulta: true, bitEliminar: true, bitDetalle: true };
+                return;
+            }
+
+            // Si es un usuario normal, le preguntamos al backend sus permisos
+            const res = await fetch(`/api/v1/mis-permisos/${moduleId}`, { headers: { 'Authorization': `Bearer ${getToken()}` } });
+            if (res.ok) {
+                permisos = await res.json();
+            }
+        } catch (e) { console.error("Error al validar seguridad:", e); }
+    }
+
     function showMessage(msg, isError = false) {
         const alertBox = document.getElementById('alert-usuario');
         alertBox.textContent = msg;
@@ -99,7 +146,6 @@ const UsuarioModule = (() => {
         setTimeout(() => alertBox.style.display = 'none', 3500);
     }
 
-    // --- Cargar Catálogos Iniciales ---
     async function cargarPerfilesEnSelect() {
         try {
             const res = await fetch('/api/v1/perfiles', { headers: { 'Authorization': `Bearer ${getToken()}` } });
@@ -117,7 +163,6 @@ const UsuarioModule = (() => {
         } catch (e) { console.error('Error cargando perfiles', e); }
     }
 
-    // --- Peticiones API ---
     async function fetchUsuarios() {
         try {
             const res = await fetch('/api/v1/usuarios', { headers: { 'Authorization': `Bearer ${getToken()}` } });
@@ -162,7 +207,6 @@ const UsuarioModule = (() => {
         } catch (e) { showMessage(e.message, true); }
     }
 
-    // --- DOM y Paginación ---
     function renderTable() {
         const tbody = document.getElementById('tabla-usuarios-body');
         tbody.innerHTML = '';
@@ -171,14 +215,13 @@ const UsuarioModule = (() => {
         const paginated = usuariosData.slice(start, end);
 
         if (paginated.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay usuarios.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay usuarios registrados.</td></tr>`;
             return;
         }
 
         paginated.forEach(u => {
             const tr = document.createElement('tr');
             
-            // Avatar
             const imgTd = document.createElement('td');
             const img = document.createElement('img');
             img.src = u.strRutaImagen ? u.strRutaImagen : `https://ui-avatars.com/api/?name=${u.strNombreUsuario}&background=random`;
@@ -200,17 +243,32 @@ const UsuarioModule = (() => {
             span.style.color = u.idEstadoUsuario === 1 ? '#065f46' : '#991b1b';
             estadoTd.appendChild(span);
 
-            const accTd = document.createElement('td');
-            const btnEdit = document.createElement('button');
-            btnEdit.textContent = 'Editar'; btnEdit.className = 'btn-edit';
-            btnEdit.onclick = () => loadFormData(u);
-            
-            const btnDel = document.createElement('button');
-            btnDel.textContent = 'Eliminar'; btnDel.className = 'btn-delete';
-            btnDel.onclick = () => deleteUsuario(u.id);
+            tr.append(imgTd, userTd, perfilTd, estadoTd);
 
-            accTd.append(btnEdit, btnDel);
-            tr.append(imgTd, userTd, perfilTd, estadoTd, accTd);
+            // Renderizado Dinámico de Botones de Acción
+            if (permisos.bitEditar || permisos.bitEliminar) {
+                const accTd = document.createElement('td');
+                
+                if (permisos.bitEditar) {
+                    const btnEdit = document.createElement('button');
+                    btnEdit.innerHTML = '<i class="fas fa-edit"></i>'; 
+                    btnEdit.className = 'btn-edit';
+                    btnEdit.title = 'Editar';
+                    btnEdit.onclick = () => loadFormData(u);
+                    accTd.appendChild(btnEdit);
+                }
+                
+                if (permisos.bitEliminar) {
+                    const btnDel = document.createElement('button');
+                    btnDel.innerHTML = '<i class="fas fa-trash"></i>'; 
+                    btnDel.className = 'btn-delete';
+                    btnDel.title = 'Eliminar';
+                    btnDel.onclick = () => deleteUsuario(u.id);
+                    accTd.appendChild(btnDel);
+                }
+                tr.appendChild(accTd);
+            }
+
             tbody.appendChild(tr);
         });
         renderPaginationControls();
@@ -231,42 +289,54 @@ const UsuarioModule = (() => {
     }
 
     function loadFormData(u) {
+        document.getElementById('form-usuario').style.display = 'block';
+        document.getElementById('tabla-contenedor').style.display = 'none';
+        
+        if (document.getElementById('btn-nuevo-usuario')) {
+            document.getElementById('btn-nuevo-usuario').parentElement.style.display = 'none';
+        }
+
+        document.getElementById('form-titulo').textContent = 'Editar Usuario';
         document.getElementById('usuario-id').value = u.id;
         document.getElementById('nombre-usuario').value = u.strNombreUsuario;
         document.getElementById('correo-usuario').value = u.strCorreo;
         document.getElementById('perfil-usuario').value = u.idPerfil;
         document.getElementById('celular-usuario').value = u.strNumeroCelular || '';
         document.getElementById('estado-usuario').value = u.idEstadoUsuario;
-        document.getElementById('pwd-usuario').value = ''; // Se deja vacío intencionalmente
+        document.getElementById('pwd-usuario').value = ''; 
+        document.getElementById('ruta-imagen').value = u.strRutaImagen || '';
         
-        const rutaInput = document.getElementById('ruta-imagen');
-        rutaInput.value = u.strRutaImagen || '';
-        triggerImagePreview(rutaInput.value);
-
         document.getElementById('btn-save-usr').textContent = 'Actualizar Usuario';
-        document.getElementById('btn-cancel-usr').classList.remove('hidden');
     }
 
     function resetForm() {
         document.getElementById('form-usuario').reset();
         document.getElementById('usuario-id').value = '';
-        document.getElementById('btn-save-usr').textContent = 'Guardar Usuario';
-        document.getElementById('btn-cancel-usr').classList.add('hidden');
-        document.getElementById('preview-container').style.display = 'none';
-    }
-
-    function triggerImagePreview(url) {
-        const previewCont = document.getElementById('preview-container');
-        const imgPrev = document.getElementById('img-preview');
-        if (url && url.startsWith('http')) {
-            imgPrev.src = url;
-            previewCont.style.display = 'block';
-        } else {
-            previewCont.style.display = 'none';
+        document.getElementById('form-usuario').style.display = 'none';
+        document.getElementById('tabla-contenedor').style.display = 'block';
+        
+        if (document.getElementById('btn-nuevo-usuario')) {
+            document.getElementById('btn-nuevo-usuario').parentElement.style.display = 'block';
         }
     }
 
     function setupEventListeners() {
+        const btnNuevo = document.getElementById('btn-nuevo-usuario');
+        if (btnNuevo) {
+            btnNuevo.addEventListener('click', () => {
+                document.getElementById('form-usuario').reset();
+                document.getElementById('usuario-id').value = '';
+                document.getElementById('form-titulo').textContent = 'Nuevo Usuario';
+                document.getElementById('btn-save-usr').textContent = 'Guardar Usuario';
+                
+                document.getElementById('form-usuario').style.display = 'block';
+                document.getElementById('tabla-contenedor').style.display = 'none';
+                btnNuevo.parentElement.style.display = 'none';
+            });
+        }
+
+        document.getElementById('btn-cancel-usr').addEventListener('click', resetForm);
+
         document.getElementById('form-usuario').addEventListener('submit', (e) => {
             e.preventDefault();
             const data = {
@@ -279,12 +349,6 @@ const UsuarioModule = (() => {
                 strRutaImagen: document.getElementById('ruta-imagen').value.trim()
             };
             saveUsuario(data, document.getElementById('usuario-id').value);
-        });
-
-        document.getElementById('btn-cancel-usr').addEventListener('click', resetForm);
-        
-        document.getElementById('ruta-imagen').addEventListener('input', (e) => {
-            triggerImagePreview(e.target.value);
         });
     }
 
