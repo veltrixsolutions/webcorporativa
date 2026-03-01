@@ -24,10 +24,9 @@ func EnviarCorreoVerificacion(correoDestino, nombreUsuario, token string) error 
 
 	link := fmt.Sprintf("%s/api/verificar-email?token=%s", appUrl, token)
 
-	// Nota: Resend en modo gratuito requiere que envíes desde "onboarding@resend.dev"
-	// hasta que verifiques un dominio propio.
+	// CORRECCIÓN: Usando un formato de correo válido con tu dominio
 	params := &resend.SendEmailRequest{
-		From:    "VeltrixSolutions <https://kevin.rodnix.com.mx>",
+		From:    "Veltrix Solutions <no-reply@kevin.rodnix.com.mx>",
 		To:      []string{correoDestino},
 		Subject: "Activación de Cuenta - Veltrix",
 		Html: fmt.Sprintf(`
