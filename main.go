@@ -9,6 +9,7 @@ import (
 
 	"WebCorporativa/handlers"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
@@ -70,8 +71,13 @@ func main() {
 	}
 
 	apiPrivada := e.Group("/api/v1")
-	// Usamos el nuevo paquete echo-jwt
-	apiPrivada.Use(echojwt.JWT([]byte(secret)))
+	// NUEVA CONFIGURACIÓN: Le enseñamos a leer tu estructura personalizada
+	apiPrivada.Use(echojwt.WithConfig(echojwt.Config{
+		SigningKey: []byte(secret),
+		NewClaimsFunc: func(c echo.Context) jwt.Claims {
+			return new(handlers.JwtCustomClaims)
+		},
+	}))
 
 	// --- Rutas del Menú ---
 	apiPrivada.GET("/menu", handlers.ObtenerMenuUsuario(db))
