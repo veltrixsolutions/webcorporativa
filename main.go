@@ -1,4 +1,3 @@
-// main.go
 package main
 
 import (
@@ -57,6 +56,11 @@ func main() {
 	// Servir archivos estáticos del Frontend
 	e.Static("/", "static")
 
+	// --- NUEVA REDIRECCIÓN ---
+	e.GET("/", func(c echo.Context) error {
+		return c.Redirect(302, "/login.html")
+	})
+
 	// Manejador de errores personalizado
 	e.HTTPErrorHandler = customHTTPErrorHandler
 
@@ -71,7 +75,6 @@ func main() {
 	}
 
 	apiPrivada := e.Group("/api/v1")
-	// NUEVA CONFIGURACIÓN: Le enseñamos a leer tu estructura personalizada
 	apiPrivada.Use(echojwt.WithConfig(echojwt.Config{
 		SigningKey: []byte(secret),
 		NewClaimsFunc: func(c echo.Context) jwt.Claims {
