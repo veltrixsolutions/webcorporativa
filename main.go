@@ -1,3 +1,4 @@
+// main.go
 package main
 
 import (
@@ -5,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"WebCorporativa/handlers"
 
@@ -14,6 +16,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/lib/pq"
+	"golang.org/x/time/rate"
 )
 
 func main() {
@@ -48,10 +51,31 @@ func main() {
 	// Inicializar framework Echo
 	e := echo.New()
 
-	// Middlewares globales
+	// ==========================================
+	// 🛡️ 1. MIDDLEWARES DE SEGURIDAD BÁSICA
+	// ==========================================
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
+
+	// ==========================================
+	// 🛡️ 2. SECURITY HEADERS (Cabeceras de Seguridad)
+	// Protege contra Clickjacking, XSS reflejado y Sniffing
+	// ==========================================
+	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
+		XSSProtection:         "1; mode=block",
+		ContentTypeNosniff:    "nosniff",
+		XFrameOptions:         "DENY",   // Impide que Veltrix sea cargado en un iframe de terceros
+		HSTSMaxAge:            31536000, // Fuerza HTTPS por 1 año
+		ContentSecurityPolicy: "default-src 'self' 'unsafe-inline' https://www.google.com https://www.gstatic.com https://cdnjs.cloudflare.com https://fonts.googleapis.com https://fonts.gstatic.com https://ui-avatars.com https://res.cloudinary.com https://widget.cloudinary.com;",
+	}))
+
+	// ==========================================
+	// 🛡️ 3. RATE LIMITING GLOBAL (Límite de Peticiones)
+	// Evita ataques de denegación de servicio (DDoS)
+	// Limita a 50 peticiones por segundo por cada IP (con un margen extra de 10)
+	// ==========================================
+	e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(rate.Limit(50))))
 
 	// Servir archivos estáticos del Frontend
 	e.Static("/", "static")
@@ -66,7 +90,29 @@ func main() {
 
 	// Grupo de rutas de API públicas
 	api := e.Group("/api")
-	api.POST("/login", handlers.Login(db))
+
+	// ==========================================
+	// 🛡️ 4. RATE LIMITING ESTRICTO PARA EL LOGIN
+	// Protege contra ataques de fuerza bruta adivinando contraseñas
+	// Límite: 5 intentos de login por minuto por cada IP
+	// ==========================================
+	loginRateLimiter := middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
+		Store: middleware.NewRateLimiterMemoryStoreWithConfig(
+			middleware.RateLimiterMemoryStoreConfig{Rate: 5.0 / 60.0, Burst: 5, ExpiresIn: 1 * time.Minute},
+		),
+		IdentifierExtractor: func(c echo.Context) (string, error) {
+			return c.RealIP(), nil
+		},
+		ErrorHandler: func(c echo.Context, err error) error {
+			return c.JSON(429, map[string]string{"error": "Demasiados intentos. Por favor, espera un minuto."})
+		},
+	})
+
+	// Aplicamos el limitador estricto a las rutas de acceso
+	api.POST("/login", handlers.Login(db), loginRateLimiter)
+	api.POST("/cambiar-pwd", handlers.ActualizarPasswordPrimerLogin(db), loginRateLimiter)
+
+	api.GET("/verificar-email", handlers.VerificarEmail(db))
 
 	// Grupo de rutas privadas protegidas con JWT
 	secret := os.Getenv("JWT_SECRET")
@@ -111,9 +157,6 @@ func main() {
 
 	// --- Ruta de Seguridad para Pantallas Estáticas ---
 	apiPrivada.GET("/mis-permisos/:idModulo", handlers.ObtenerMisPermisosModulo(db))
-
-	api.GET("/verificar-email", handlers.VerificarEmail(db))
-	api.POST("/cambiar-pwd", handlers.ActualizarPasswordPrimerLogin(db))
 
 	// Configuración del puerto dinámico
 	port := os.Getenv("PORT")
