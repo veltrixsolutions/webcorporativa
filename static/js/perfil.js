@@ -28,15 +28,15 @@ const PerfilModule = (() => {
                </button>` 
             : '';
 
-        // Renderizado Principal con Inyección de Estilos UI Modernos
+        // Renderizado Principal con Inyección de Estilos UI Modernos y Responsivos
         container.innerHTML = `
             <style>
-                .ux-modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 1000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
+                .ux-modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 1000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s ease; padding: 15px; }
                 .ux-modal-overlay.active { opacity: 1; visibility: visible; }
-                .ux-modal-card { background: #ffffff; border-radius: 16px; width: 100%; max-width: 500px; transform: translateY(30px) scale(0.95); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); overflow: hidden; }
+                .ux-modal-card { background: #ffffff; border-radius: 16px; width: 100%; max-width: 600px; transform: translateY(30px) scale(0.95); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); overflow: hidden; max-height: 90vh; display: flex; flex-direction: column; }
                 .ux-modal-overlay.active .ux-modal-card { transform: translateY(0) scale(1); }
                 
-                .ux-toast { position: fixed; bottom: 30px; right: 30px; background: #ffffff; border-radius: 10px; padding: 16px 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; z-index: 1100; transform: translateX(150%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-left: 4px solid #3b82f6; }
+                .ux-toast { position: fixed; bottom: 30px; right: 30px; background: #ffffff; border-radius: 10px; padding: 16px 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; z-index: 1100; transform: translateX(150%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-left: 4px solid #3b82f6; max-width: calc(100vw - 60px); }
                 .ux-toast.show { transform: translateX(0); }
                 .ux-toast.success { border-left-color: #10b981; }
                 .ux-toast.error { border-left-color: #ef4444; }
@@ -44,23 +44,27 @@ const PerfilModule = (() => {
                 .ux-table-row { transition: background-color 0.2s ease, transform 0.2s ease; }
                 .ux-table-row:hover { background-color: #f8fafc; transform: scale(1.002); }
                 
-                .ux-input { width: 100%; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; color: #0f172a; transition: all 0.2s; background: #f8fafc; }
-                .ux-input:focus { outline: none; border-color: #3b82f6; background: #ffffff; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+                .ux-input { width: 100%; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; color: #0f172a; transition: all 0.2s; background: #ffffff; }
+                .ux-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
                 .ux-input:disabled { background: #f1f5f9; cursor: not-allowed; opacity: 0.8; color: #64748b; }
             </style>
 
-            <div style="max-width: 1100px; margin: 0 auto; padding: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px;">
+            <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; gap: 15px;">
                     <div>
-                        <h1 style="color: #0f172a; font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 5px;">Perfiles de Acceso</h1>
-                        <p style="color: #64748b; font-size: 1rem; margin: 0;">Administración de roles y niveles de jerarquía del sistema.</p>
+                        <h1 style="margin: 0; color: #0f172a; font-size: 1.75rem; font-weight: 700;">
+                            <i class="fas fa-id-card-alt" style="color: #64748b; margin-right: 10px;"></i>Perfiles de Acceso
+                        </h1>
+                        <p style="margin: 5px 0 0 0; color: #64748b; font-size: 0.95rem;">Administración de roles y niveles de jerarquía del sistema.</p>
                     </div>
-                    <div>${btnNuevoHTML}</div>
+                    <div id="contenedor-btn-nuevo">
+                        ${btnNuevoHTML}
+                    </div>
                 </div>
 
                 <div style="background: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: hidden;">
                     <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; min-width: 600px;">
                             <thead style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
                                 <tr>
                                     <th style="padding: 16px 24px; color: #475569; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Nombre del Perfil</th>
@@ -71,14 +75,14 @@ const PerfilModule = (() => {
                             <tbody id="tabla-perfiles-body"></tbody>
                         </table>
                     </div>
-                    <div id="pagination-controls" style="padding: 15px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: center; gap: 8px; background: #fdfdfd;"></div>
+                    <div id="pagination-controls" style="padding: 15px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: center; gap: 8px; background: #fdfdfd; flex-wrap: wrap;"></div>
                 </div>
             </div>
 
             <div id="modal-perfil" class="ux-modal-overlay">
                 <div class="ux-modal-card">
-                    <form id="form-perfil">
-                        <div style="padding: 24px 30px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #fdfdfd;">
+                    <form id="form-perfil" style="display: flex; flex-direction: column; height: 100%;">
+                        <div style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #fdfdfd; flex-shrink: 0;">
                             <h2 id="form-titulo" style="margin: 0; font-size: 1.25rem; color: #0f172a; font-weight: 700; display: flex; align-items: center; gap: 10px;">
                                 <div style="background: #eff6ff; color: #3b82f6; width: 32px; height: 32px; border-radius: 8px; display: flex; justify-content: center; align-items: center;"><i class="fas fa-id-badge"></i></div>
                                 <span>Nuevo Perfil</span>
@@ -86,10 +90,10 @@ const PerfilModule = (() => {
                             <button type="button" id="btn-close-modal" style="background: transparent; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer; transition: color 0.2s;"><i class="fas fa-times"></i></button>
                         </div>
                         
-                        <div style="padding: 30px;">
+                        <div style="padding: 24px; overflow-y: auto; flex-grow: 1;">
                             <input type="hidden" id="perfil-id" value="">
                             
-                            <div style="display: grid; gap: 20px;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
                                 <div>
                                     <label style="display: block; margin-bottom: 8px; color: #334155; font-size: 0.9rem; font-weight: 600;">Nombre del Perfil <span style="color: #ef4444;">*</span></label>
                                     <input type="text" id="nombre-perfil" class="ux-input" required placeholder="Ej. Gerencia Regional">
@@ -98,18 +102,18 @@ const PerfilModule = (() => {
                                     <label style="display: block; margin-bottom: 8px; color: #334155; font-size: 0.9rem; font-weight: 600;">Nivel de Acceso Global <span style="color: #ef4444;">*</span></label>
                                     <select id="es-admin" class="ux-input">
                                         <option value="false">Usuario Estándar</option>
-                                        <option value="true">Super Administrador (Acceso Total)</option>
+                                        <option value="true">Super Administrador</option>
                                     </select>
                                     <p id="admin-warning" style="margin: 8px 0 0 0; font-size: 0.8rem; color: #d97706; display: none;">
-                                        <i class="fas fa-info-circle"></i> No puedes remover el acceso de administrador a este perfil principal.
+                                        <i class="fas fa-info-circle"></i> Bloqueado por seguridad.
                                     </p>
                                 </div>
                             </div>
                         </div>
 
-                        <div style="padding: 20px 30px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 12px;">
+                        <div style="padding: 16px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; flex-shrink: 0;">
                             <button type="button" id="btn-cancel-modal" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Cancelar</button>
-                            <button type="submit" id="btn-save-perfil" style="background: #10b981; border: none; color: white; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px rgba(16,185,129,0.2);">
+                            <button type="submit" id="btn-save-perfil" style="background: #10b981; border: none; color: white; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px rgba(16,185,129,0.2);">
                                 <i class="fas fa-check"></i> <span>Guardar</span>
                             </button>
                         </div>
@@ -187,7 +191,6 @@ const PerfilModule = (() => {
     }
 
     async function savePerfil(data, id) {
-        // Feedback visual de carga
         const btnSave = document.getElementById('btn-save-perfil');
         const originalContent = btnSave.innerHTML;
         btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Procesando...</span>';
@@ -296,7 +299,7 @@ const PerfilModule = (() => {
         for (let i = 1; i <= pageCount; i++) {
             const btn = document.createElement('button'); 
             btn.textContent = i; 
-            btn.style.cssText = `background: ${i === currentPage ? '#2563eb' : '#ffffff'}; color: ${i === currentPage ? '#ffffff' : '#475569'}; border: 1px solid ${i === currentPage ? '#2563eb' : '#e2e8f0'}; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s;`;
+            btn.style.cssText = `background: ${i === currentPage ? '#2563eb' : '#ffffff'}; color: ${i === currentPage ? '#ffffff' : '#475569'}; border: 1px solid ${i === currentPage ? '#2563eb' : '#e2e8f0'}; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s; margin: 2px;`;
             if (i !== currentPage) btn.onmouseover = () => btn.style.background = '#f1f5f9';
             if (i !== currentPage) btn.onmouseout = () => btn.style.background = '#ffffff';
             btn.onclick = () => { currentPage = i; renderTable(); }; 

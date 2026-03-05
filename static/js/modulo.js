@@ -28,16 +28,16 @@ const ModuloApp = (() => {
                </button>` 
             : '';
 
-        // Renderizado Principal con Inyección de Estilos para Animaciones y Modales
+        // Renderizado Principal con Inyección de Estilos Responsivos
         container.innerHTML = `
             <style>
                 /* Estilos embebidos para UX avanzada (Modales y Toasts) */
-                .ux-modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 1000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
+                .ux-modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 1000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s ease; padding: 15px; }
                 .ux-modal-overlay.active { opacity: 1; visibility: visible; }
-                .ux-modal-card { background: #ffffff; border-radius: 16px; width: 100%; max-width: 480px; transform: translateY(30px) scale(0.95); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); overflow: hidden; }
+                .ux-modal-card { background: #ffffff; border-radius: 16px; width: 100%; max-width: 480px; transform: translateY(30px) scale(0.95); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
                 .ux-modal-overlay.active .ux-modal-card { transform: translateY(0) scale(1); }
                 
-                .ux-toast { position: fixed; bottom: 30px; right: 30px; background: #ffffff; border-radius: 10px; padding: 16px 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; z-index: 1100; transform: translateX(150%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-left: 4px solid #3b82f6; }
+                .ux-toast { position: fixed; bottom: 30px; right: 30px; background: #ffffff; border-radius: 10px; padding: 16px 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; z-index: 1100; transform: translateX(150%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-left: 4px solid #3b82f6; max-width: calc(100vw - 60px); }
                 .ux-toast.show { transform: translateX(0); }
                 .ux-toast.success { border-left-color: #10b981; }
                 .ux-toast.error { border-left-color: #ef4444; }
@@ -50,9 +50,11 @@ const ModuloApp = (() => {
             </style>
 
             <div style="max-width: 1100px; margin: 0 auto; padding: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px;">
+                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; gap: 15px;">
                     <div>
-                        <h1 style="color: #0f172a; font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 5px;">Módulos</h1>
+                        <h1 style="color: #0f172a; font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 5px;">
+                            <i class="fas fa-cubes" style="color: #64748b; margin-right: 10px;"></i>Módulos
+                        </h1>
                         <p style="color: #64748b; font-size: 1rem; margin: 0;">Administra los componentes estructurales del sistema.</p>
                     </div>
                     <div>${btnNuevoHTML}</div>
@@ -60,7 +62,7 @@ const ModuloApp = (() => {
 
                 <div style="background: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: hidden;">
                     <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; min-width: 500px;">
                             <thead style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
                                 <tr>
                                     <th style="padding: 16px 24px; color: #475569; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Estructura del Módulo</th>
@@ -70,14 +72,14 @@ const ModuloApp = (() => {
                             <tbody id="tabla-modulos-body"></tbody>
                         </table>
                     </div>
-                    <div id="pagination-controls-mod" style="padding: 15px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: center; gap: 8px; background: #fdfdfd;"></div>
+                    <div id="pagination-controls-mod" style="padding: 15px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: center; gap: 8px; background: #fdfdfd; flex-wrap: wrap;"></div>
                 </div>
             </div>
 
             <div id="modal-modulo" class="ux-modal-overlay">
                 <div class="ux-modal-card">
-                    <form id="form-modulo">
-                        <div style="padding: 24px 30px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #fdfdfd;">
+                    <form id="form-modulo" style="display: flex; flex-direction: column; height: 100%;">
+                        <div style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #fdfdfd; flex-shrink: 0;">
                             <h2 id="form-titulo" style="margin: 0; font-size: 1.25rem; color: #0f172a; font-weight: 700; display: flex; align-items: center; gap: 10px;">
                                 <div style="background: #eff6ff; color: #3b82f6; width: 32px; height: 32px; border-radius: 8px; display: flex; justify-content: center; align-items: center;"><i class="fas fa-layer-group"></i></div>
                                 <span>Nuevo Módulo</span>
@@ -85,17 +87,17 @@ const ModuloApp = (() => {
                             <button type="button" id="btn-close-modal" style="background: transparent; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer; transition: color 0.2s;"><i class="fas fa-times"></i></button>
                         </div>
                         
-                        <div style="padding: 30px;">
+                        <div style="padding: 24px; overflow-y: auto; flex-grow: 1;">
                             <input type="hidden" id="modulo-id" value="">
-                            <div style="margin-bottom: 20px;">
+                            <div>
                                 <label style="display: block; margin-bottom: 8px; color: #334155; font-size: 0.9rem; font-weight: 600;">Nombre del Módulo <span style="color: #ef4444;">*</span></label>
                                 <input type="text" id="nombre-modulo" class="ux-input" required autocomplete="off" placeholder="Ej. Panel de Control, Reportes...">
                             </div>
                         </div>
 
-                        <div style="padding: 20px 30px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 12px;">
+                        <div style="padding: 16px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; flex-shrink: 0;">
                             <button type="button" id="btn-cancel-modal" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Cancelar</button>
-                            <button type="submit" id="btn-save-mod" style="background: #10b981; border: none; color: white; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px rgba(16,185,129,0.2);">
+                            <button type="submit" id="btn-save-mod" style="background: #10b981; border: none; color: white; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px rgba(16,185,129,0.2);">
                                 <i class="fas fa-check"></i> <span>Guardar</span>
                             </button>
                         </div>
@@ -200,7 +202,6 @@ const ModuloApp = (() => {
     }
 
     async function deleteModulo(id) {
-        // En un futuro podemos cambiar este confirm por un Modal de advertencia, pero por ahora mantenemos el estándar
         if (!confirm('¿Estás seguro de que deseas eliminar este módulo permanentemente?')) return;
         try {
             const res = await fetch(`/api/v1/modulos/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } });
@@ -279,7 +280,7 @@ const ModuloApp = (() => {
         for (let i = 1; i <= pageCount; i++) {
             const btn = document.createElement('button'); 
             btn.textContent = i; 
-            btn.style.cssText = `background: ${i === currentPage ? '#2563eb' : '#ffffff'}; color: ${i === currentPage ? '#ffffff' : '#475569'}; border: 1px solid ${i === currentPage ? '#2563eb' : '#e2e8f0'}; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s;`;
+            btn.style.cssText = `background: ${i === currentPage ? '#2563eb' : '#ffffff'}; color: ${i === currentPage ? '#ffffff' : '#475569'}; border: 1px solid ${i === currentPage ? '#2563eb' : '#e2e8f0'}; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s; margin: 2px;`;
             if (i !== currentPage) btn.onmouseover = () => btn.style.background = '#f1f5f9';
             if (i !== currentPage) btn.onmouseout = () => btn.style.background = '#ffffff';
             btn.onclick = () => { currentPage = i; renderTable(); }; 
