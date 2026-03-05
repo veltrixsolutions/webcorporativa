@@ -37,7 +37,7 @@ func ObtenerUsuarios(db *sql.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		query := `
 			SELECT u.id, u.strNombreUsuario, p.strNombrePerfil, u.idPerfil, u.idEstadoUsuario, 
-			       u.strCorreo, u.strNumeroCelular, u.strRutaImagen 
+				   u.strCorreo, u.strNumeroCelular, u.strRutaImagen 
 			FROM Usuario u 
 			INNER JOIN Perfil p ON u.idPerfil = p.id 
 			ORDER BY u.id DESC`
@@ -84,32 +84,39 @@ func CrearUsuario(db *sql.DB) echo.HandlerFunc {
 		err = db.QueryRow(query, u.StrNombreUsuario, u.IdPerfil, string(hashPwd), u.IdEstadoUsuario, u.StrCorreo, u.StrNumeroCelular, u.StrRutaImagen, tokenValidacion).Scan(&u.ID)
 
 		if err != nil {
-			// Log para depuración interna
+			// Manejo amigable de correo duplicado
+			if err.Error() == "pq: duplicate key value violates unique constraint \"usuario_strcorreo_key\"" {
+				return c.JSON(http.StatusConflict, map[string]string{"error": "Este correo electrónico ya está registrado en el sistema."})
+			}
 			fmt.Printf("Error BD al crear usuario: %v\n", err)
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "El correo o usuario ya existe."})
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Ocurrió un error al guardar el usuario en la Base de Datos."})
 		}
 
-		// CORRECCIÓN: Pasar datos específicos por valor a la goroutine
-		go func(email, nombre, token string) {
-			// Recuperación de pánicos dentro de la goroutine para no tirar el servidor
+		// Extraemos la contraseña en texto plano antes de limpiarla
+		pwdTemporal := u.StrPwd
+
+		// CORRECCIÓN: Pasar datos específicos (incluyendo contraseña) a la goroutine
+		go func(email, nombre, token, pwd string) {
 			defer func() {
 				if r := recover(); r != nil {
 					fmt.Printf("Pánico recuperado en envío de correo: %v\n", r)
 				}
 			}()
 
-			errCorreo := EnviarCorreoVerificacion(email, nombre, token)
+			errCorreo := EnviarCorreoVerificacion(email, nombre, token, pwd)
 			if errCorreo != nil {
 				fmt.Printf("Error de Resend (API): %v\n", errCorreo)
 			} else {
 				fmt.Println("Correo de verificación enviado con éxito vía Resend.")
 			}
-		}(u.StrCorreo, u.StrNombreUsuario, tokenValidacion)
+		}(u.StrCorreo, u.StrNombreUsuario, tokenValidacion, pwdTemporal)
 
+		// Limpiar contraseña por seguridad antes de responder
 		u.StrPwd = ""
 		return c.JSON(http.StatusCreated, u)
 	}
 }
+
 func ActualizarUsuario(db *sql.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, _ := strconv.Atoi(c.Param("id"))
