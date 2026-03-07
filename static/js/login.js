@@ -12,9 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FUNCIONES DE SEGURIDAD Y VALIDACIÓN ---
 
-    // Valida que el usuario solo contenga letras, números, puntos, guiones o @ (Evita XSS y SQLi básico)
+    // Valida que el usuario no contenga código malicioso, pero PERMITE espacios y acentos
     const isValidUsername = (username) => {
-        const usernameRegex = /^[a-zA-Z0-9_.@-]{3,50}$/;
+        const usernameRegex = /^[a-zA-Z0-9_.@áéíóúÁÉÍÓÚñÑ\s-]{3,50}$/;
         return usernameRegex.test(username);
     };
 
