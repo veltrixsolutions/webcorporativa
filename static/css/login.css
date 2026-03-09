@@ -285,3 +285,42 @@ input:focus + .input-icon,
     h1 { font-size: 1.4rem; }
     .recaptcha-wrapper { transform: scale(0.85); }
 }
+
+/* --- ALERTA NOSCRIPT --- */
+.noscript-error {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 9999;
+    background-color: #b91c1c; /* Rojo corporativo de error */
+    color: white;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    animation: slideDown 0.5s ease-out;
+}
+
+.noscript-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.noscript-content i {
+    font-size: 1.5rem;
+}
+
+.noscript-content p {
+    font-size: 0.9rem;
+    margin-top: 2px;
+    opacity: 0.9;
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0); }
+}
