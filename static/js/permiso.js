@@ -1,6 +1,6 @@
 // static/js/permiso.js
 const PermisoModule = (() => {
-    let permisosData = [], perfilesDisponibles = [], modulosDisponibles = [], currentPage = 1;
+    let permisosData = [], filteredData = [], perfilesDisponibles = [], modulosDisponibles = [], currentPage = 1;
     const rowsPerPage = 5;
     let permisos = { bitAgregar: false, bitEditar: false, bitConsulta: false, bitEliminar: false, bitDetalle: false };
 
@@ -27,7 +27,7 @@ const PermisoModule = (() => {
                </button>` 
             : '';
 
-        // Estilos UX inyectados
+        // Estilos UX inyectados (Incluye el nuevo buscador)
         container.innerHTML = `
             <style>
                 .ux-modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 1000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
@@ -47,6 +47,12 @@ const PermisoModule = (() => {
                 .ux-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
                 .ux-input:disabled { background: #f1f5f9; cursor: not-allowed; opacity: 0.8; color: #64748b; border-color: #e2e8f0; }
 
+                /* Estilos del Buscador Inteligente */
+                .search-container { position: relative; width: 100%; max-width: 400px; margin-bottom: 20px; }
+                .search-input { width: 100%; padding: 12px 16px 12px 42px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.95rem; color: #0f172a; transition: all 0.2s; background: #f8fafc; }
+                .search-input:focus { background: #ffffff; outline: none; border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.15); }
+                .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 1rem; }
+
                 /* Checkboxes convertidos en Tarjetas Interactivas */
                 .perm-card { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid #e2e8f0; border-radius: 10px; cursor: pointer; transition: all 0.2s; background: #ffffff; }
                 .perm-card:hover { border-color: #94a3b8; background: #f8fafc; }
@@ -58,12 +64,17 @@ const PermisoModule = (() => {
             </style>
 
             <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
                     <div>
                         <h1 style="color: #0f172a; font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 5px;">Matriz de Permisos</h1>
                         <p style="color: #64748b; font-size: 1rem; margin: 0;">Control maestro de acceso por perfil y módulo.</p>
                     </div>
                     <div>${btnNuevoHTML}</div>
+                </div>
+
+                <div class="search-container">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="buscador-permisos" class="search-input" placeholder="Buscar por perfil o módulo..." autocomplete="off">
                 </div>
 
                 <div style="background: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: hidden;">
@@ -195,7 +206,6 @@ const PermisoModule = (() => {
         setTimeout(() => { toast.classList.remove('show'); }, 4000);
     }
 
-    // Modal Logic
     function openModal(isEdit = false, p = null) {
         document.getElementById('form-permiso').reset();
         document.getElementById('permiso-id').value = '';
@@ -213,7 +223,6 @@ const PermisoModule = (() => {
             selPerfil.value = p.idPerfil;
             selModulo.value = p.idModulo;
             
-            // Bloqueo visual de llaves foráneas
             selPerfil.disabled = true;
             selModulo.disabled = true;
             
@@ -251,7 +260,15 @@ const PermisoModule = (() => {
     }
 
     async function fetchPermisos() {
-        try { const res = await fetch('/api/v1/permisos', { headers: { 'Authorization': `Bearer ${getToken()}` } }); if (res.ok) { permisosData = await res.json() || []; currentPage = 1; renderTable(); } } catch (e) { console.error("Error", e); }
+        try { 
+            const res = await fetch('/api/v1/permisos', { headers: { 'Authorization': `Bearer ${getToken()}` } }); 
+            if (res.ok) { 
+                permisosData = await res.json() || []; 
+                filteredData = [...permisosData]; // Inicializamos los datos filtrados con todos los datos
+                currentPage = 1; 
+                renderTable(); 
+            } 
+        } catch (e) { console.error("Error", e); }
     }
 
     async function savePermiso(data, id) {
@@ -267,6 +284,7 @@ const PermisoModule = (() => {
                 closeModal();
                 showToast('¡Guardado!', 'Configuración de permisos actualizada.', 'success'); 
                 fetchPermisos(); 
+                document.getElementById('buscador-permisos').value = ''; // Limpiar buscador tras guardar
             } else {
                 showToast('Error', 'No se pudo guardar la configuración (Posible duplicado).', 'error');
             }
@@ -283,6 +301,7 @@ const PermisoModule = (() => {
             if (res.ok) { 
                 showToast('Eliminado', 'Permisos revocados con éxito.', 'success'); 
                 fetchPermisos(); 
+                document.getElementById('buscador-permisos').value = ''; // Limpiar buscador tras borrar
             } else {
                 showToast('Error', 'No se pudo revocar el permiso.', 'error');
             }
@@ -297,10 +316,14 @@ const PermisoModule = (() => {
 
     function renderTable() {
         const tbody = document.getElementById('tabla-permisos-body'); tbody.innerHTML = '';
-        const start = (currentPage - 1) * rowsPerPage; const paginated = permisosData.slice(start, start + rowsPerPage);
         
-        if (paginated.length === 0) { 
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 40px; color: #94a3b8;"><div style="font-size: 2rem; margin-bottom: 10px;"><i class="fas fa-unlock"></i></div>No hay asignaciones de permisos configuradas.</td></tr>`; 
+        // La paginación ahora funciona sobre "filteredData" en lugar de "permisosData"
+        const start = (currentPage - 1) * rowsPerPage; 
+        const paginated = filteredData.slice(start, start + rowsPerPage);
+        
+        if (filteredData.length === 0) { 
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 40px; color: #94a3b8;"><div style="font-size: 2.5rem; margin-bottom: 15px; color: #cbd5e1;"><i class="fas fa-search"></i></div><span style="font-size: 1.1rem; font-weight: 500;">No se encontraron resultados</span><p style="margin-top: 5px; font-size: 0.9rem;">Prueba buscando con otro nombre de perfil o módulo.</p></td></tr>`; 
+            document.getElementById('pagination-controls-perm').innerHTML = ''; // Ocultar controles de paginación
             return; 
         }
         
@@ -351,7 +374,7 @@ const PermisoModule = (() => {
 
     function renderPaginationControls() {
         const controls = document.getElementById('pagination-controls-perm'); controls.innerHTML = '';
-        const pageCount = Math.ceil(permisosData.length / rowsPerPage);
+        const pageCount = Math.ceil(filteredData.length / rowsPerPage);
         if(pageCount <= 1) return;
 
         for (let i = 1; i <= pageCount; i++) {
@@ -388,6 +411,28 @@ const PermisoModule = (() => {
                 bitDetalle: false 
             }, document.getElementById('permiso-id').value);
         });
+
+        // EVENTO DEL BUSCADOR INTELIGENTE
+        const buscador = document.getElementById('buscador-permisos');
+        if (buscador) {
+            buscador.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                
+                // Si borran el texto, regresamos todo a la normalidad
+                if (query === '') {
+                    filteredData = [...permisosData];
+                } else {
+                    // Filtramos buscando coincidencias en Perfil o en Módulo
+                    filteredData = permisosData.filter(p => 
+                        p.perfilNombre.toLowerCase().includes(query) || 
+                        p.moduloNombre.toLowerCase().includes(query)
+                    );
+                }
+                
+                currentPage = 1; // Siempre regresamos a la página 1 al buscar
+                renderTable();
+            });
+        }
     }
     
     return { render: renderView };
