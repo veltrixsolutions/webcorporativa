@@ -1,7 +1,12 @@
-// static/js/permiso.js
 const PermisoModule = (() => {
     let permisosData = [], perfilesDisponibles = [], modulosDisponibles = [];
     let permisos = { bitAgregar: false, bitEditar: false, bitConsulta: false, bitEliminar: false, bitDetalle: false };
+    
+    // Variables para la paginación y el manejo de estado
+    let matrizEdicion = []; 
+    let currentPage = 1;
+    const rowsPerPage = 5;
+    let currentPerfilId = null;
 
     async function renderView(container, moduleId, perfilId) {
         // 1. Validar seguridad del usuario actual
@@ -21,7 +26,7 @@ const PermisoModule = (() => {
             return;
         }
 
-        // 2. Inyectar UI (Estilo Cuadrícula Estática Veltrix)
+        // 2. Inyectar UI (Estilo Sinergia Veltrix)
         container.innerHTML = `
             <style>
                 .ux-toast { position: fixed; bottom: 30px; right: 30px; background: #ffffff; border-radius: 10px; padding: 16px 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; z-index: 1100; transform: translateX(150%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-left: 4px solid #3b82f6; }
@@ -29,32 +34,33 @@ const PermisoModule = (() => {
                 .ux-toast.success { border-left-color: #10b981; }
                 .ux-toast.error { border-left-color: #ef4444; }
                 
-                .ux-table-row { transition: background-color 0.2s ease; border-bottom: 1px solid #e2e8f0; }
-                .ux-table-row:hover { background-color: #f8fafc; }
+                .ux-table-row { transition: background-color 0.2s ease, transform 0.2s ease; border-bottom: 1px solid #e2e8f0; }
+                .ux-table-row:hover { background-color: #f8fafc; transform: scale(1.002); }
                 
-                .ux-select { width: 100%; max-width: 400px; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; color: #0f172a; transition: all 0.2s; background: #ffffff; font-weight: 500; cursor: pointer; }
-                .ux-select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.15); }
+                .ux-select { width: 100%; max-width: 400px; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; color: #0f172a; transition: all 0.2s; background: #ffffff; font-weight: 500; cursor: pointer; }
+                .ux-select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
 
                 /* Checkboxes Grandes y Centrados */
                 .matriz-checkbox { width: 20px; height: 20px; accent-color: #2563eb; cursor: pointer; transition: transform 0.1s; }
                 .matriz-checkbox:hover { transform: scale(1.1); }
                 .matriz-checkbox:disabled { cursor: not-allowed; opacity: 0.6; filter: grayscale(100%); }
-                
-                th { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85rem; padding: 16px; color: #475569; }
-                td { padding: 14px 16px; }
             </style>
 
             <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
-                <div style="margin-bottom: 25px;">
-                    <h1 style="color: #0f172a; font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 5px;">Matriz de Permisos</h1>
-                    <p style="color: #64748b; font-size: 1rem; margin: 0;">Selecciona un perfil y configura sus accesos a los diferentes módulos.</p>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px;">
+                    <div>
+                        <h1 style="color: #0f172a; font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 5px;">Matriz de Permisos</h1>
+                        <p style="color: #64748b; font-size: 1rem; margin: 0;">Selecciona un perfil y configura sus accesos a los diferentes módulos.</p>
+                    </div>
                 </div>
 
-                <div style="background: #ffffff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; margin-bottom: 20px; display: flex; align-items: center; gap: 20px;">
+                <div style="background: #ffffff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; margin-bottom: 25px; display: flex; align-items: center; gap: 20px;">
                     <div style="flex-grow: 1; max-width: 500px;">
-                        <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 8px; text-transform: uppercase;">[Datos Perfil]</label>
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Perfil a Configurar</label>
                         <div style="display: flex; align-items: center; gap: 15px;">
-                            <i class="fas fa-users-cog" style="color: #3b82f6; font-size: 1.5rem;"></i>
+                            <div style="background: #eff6ff; color: #3b82f6; width: 40px; height: 40px; border-radius: 10px; display: flex; justify-content: center; align-items: center;">
+                                <i class="fas fa-users-cog" style="font-size: 1.2rem;"></i>
+                            </div>
                             <select id="sel-perfil-buscador" class="ux-select">
                                 <option value="">Cargando perfiles...</option>
                             </select>
@@ -63,18 +69,15 @@ const PermisoModule = (() => {
                 </div>
 
                 <div style="background: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: hidden;">
-                    <div style="background: #1e293b; padding: 12px 20px;">
-                        <span style="color: #f8fafc; font-weight: 600; font-size: 0.9rem;">[Módulos Web]</span>
-                    </div>
                     <div style="overflow-x: auto;">
                         <table style="width: 100%; border-collapse: collapse; text-align: left; min-width: 800px;">
-                            <thead style="background: #f1f5f9; border-bottom: 2px solid #e2e8f0;">
+                            <thead style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
                                 <tr>
-                                    <th style="width: 30%;">Módulo</th>
-                                    <th style="text-align: center; width: 15%;"><i class="fas fa-plus-circle" style="color: #10b981;"></i> Agregar</th>
-                                    <th style="text-align: center; width: 15%;"><i class="fas fa-edit" style="color: #f59e0b;"></i> Editar</th>
-                                    <th style="text-align: center; width: 15%;"><i class="fas fa-trash-alt" style="color: #ef4444;"></i> Eliminar</th>
-                                    <th style="text-align: center; width: 15%;"><i class="fas fa-eye" style="color: #3b82f6;"></i> Consultar</th>
+                                    <th style="padding: 16px 20px; width: 40%; color: #475569; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Módulo Web</th>
+                                    <th style="padding: 16px 20px; text-align: center; color: #475569; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;"><i class="fas fa-plus-circle" style="color: #10b981; margin-right: 5px;"></i> Agregar</th>
+                                    <th style="padding: 16px 20px; text-align: center; color: #475569; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;"><i class="fas fa-edit" style="color: #f59e0b; margin-right: 5px;"></i> Editar</th>
+                                    <th style="padding: 16px 20px; text-align: center; color: #475569; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;"><i class="fas fa-trash-alt" style="color: #ef4444; margin-right: 5px;"></i> Eliminar</th>
+                                    <th style="padding: 16px 20px; text-align: center; color: #475569; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;"><i class="fas fa-eye" style="color: #3b82f6; margin-right: 5px;"></i> Consultar</th>
                                 </tr>
                             </thead>
                             <tbody id="tabla-matriz-body">
@@ -83,8 +86,10 @@ const PermisoModule = (() => {
                         </table>
                     </div>
                     
-                    <div style="padding: 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 15px;">
-                        <button type="button" id="btn-cancelar" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: none;">Cancelar</button>
+                    <div id="pagination-controls-matriz" style="padding: 15px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: center; gap: 8px; background: #fdfdfd;"></div>
+                    
+                    <div style="padding: 20px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 15px;">
+                        <button type="button" id="btn-cancelar" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: none;">Descartar Cambios</button>
                         <button type="button" id="btn-guardar-matriz" style="background: #10b981; border: none; color: white; padding: 10px 30px; border-radius: 8px; font-weight: 600; cursor: pointer; display: none; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px rgba(16,185,129,0.2);">
                             <i class="fas fa-save"></i> <span>Guardar Privilegios</span>
                         </button>
@@ -130,7 +135,6 @@ const PermisoModule = (() => {
     // --- CARGA MASIVA DE DATOS INICIALES ---
     async function inicializarDatos() {
         try {
-            // Hacemos 3 peticiones al mismo tiempo para optimizar velocidad
             const [resPerfiles, resModulos, resPermisos] = await Promise.all([ 
                 fetch('/api/v1/perfiles', { headers: { 'Authorization': `Bearer ${getToken()}` } }), 
                 fetch('/api/v1/modulos', { headers: { 'Authorization': `Bearer ${getToken()}` } }),
@@ -141,7 +145,6 @@ const PermisoModule = (() => {
             if (resModulos.ok) modulosDisponibles = await resModulos.json() || [];
             if (resPermisos.ok) permisosData = await resPermisos.json() || [];
 
-            // Llenar el Dropdown de Perfiles
             const selector = document.getElementById('sel-perfil-buscador');
             selector.innerHTML = '<option value="">-- Selecciona un Perfil --</option>';
             perfilesDisponibles.forEach(p => {
@@ -149,12 +152,10 @@ const PermisoModule = (() => {
             });
 
         } catch (e) { 
-            console.error("Error de conexión al servidor", e); 
             showToast("Error", "No se pudieron cargar los catálogos del sistema.", "error");
         }
     }
 
-    // --- RECARGAR PERMISOS EN SEGUNDO PLANO (DESPUÉS DE GUARDAR) ---
     async function refrescarDataPermisos() {
         try {
             const res = await fetch('/api/v1/permisos', { headers: { 'Authorization': `Bearer ${getToken()}` } });
@@ -162,99 +163,154 @@ const PermisoModule = (() => {
         } catch(e) { console.error(e); }
     }
 
-    // --- RENDERIZAR LA MATRIZ (LA CUADRÍCULA ESTÁTICA) ---
-    function renderMatriz(perfilIdSeleccionado) {
-        const tbody = document.getElementById('tabla-matriz-body');
-        const btnGuardar = document.getElementById('btn-guardar-matriz');
-        const btnCancelar = document.getElementById('btn-cancelar');
-        tbody.innerHTML = '';
+    // --- CONSTRUIR EL ESTADO EN MEMORIA ---
+    function construirMatrizState(perfilIdSeleccionado) {
+        currentPerfilId = parseInt(perfilIdSeleccionado);
+        currentPage = 1;
 
-        if (!perfilIdSeleccionado) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: #94a3b8;"><i class="fas fa-mouse-pointer" style="font-size: 2rem; margin-bottom: 15px; opacity:0.5; display:block;"></i>Selecciona un perfil en la parte superior para configurar sus accesos.</td></tr>';
-            btnGuardar.style.display = 'none';
-            btnCancelar.style.display = 'none';
+        if (!currentPerfilId) {
+            matrizEdicion = [];
+            renderTablaPaginada();
             return;
         }
 
-        // Si el usuario actual no tiene permiso de Editar, mostramos pero bloqueamos
-        const disabledAttr = permisos.bitEditar ? '' : 'disabled';
-        
-        // Si tiene permiso de editar, mostramos los botones
+        // Creamos un array que actuará como nuestro "estado temporal"
+        matrizEdicion = modulosDisponibles.map(modulo => {
+            const dbPerm = permisosData.find(p => p.idPerfil === currentPerfilId && p.idModulo === modulo.id);
+            return {
+                idModulo: modulo.id,
+                strNombreModulo: modulo.strNombreModulo,
+                permisoId: dbPerm ? dbPerm.id : null, // Nos sirve para saber si haremos PUT o POST
+                bitAgregar: dbPerm ? dbPerm.bitAgregar : false,
+                bitEditar: dbPerm ? dbPerm.bitEditar : false,
+                bitEliminar: dbPerm ? dbPerm.bitEliminar : false,
+                bitConsulta: dbPerm ? dbPerm.bitConsulta : false
+            };
+        });
+
+        renderTablaPaginada();
+    }
+
+    // --- RENDERIZAR LA TABLA (CON PAGINACIÓN) ---
+    function renderTablaPaginada() {
+        const tbody = document.getElementById('tabla-matriz-body');
+        const btnGuardar = document.getElementById('btn-guardar-matriz');
+        const btnCancelar = document.getElementById('btn-cancelar');
+        const pagControls = document.getElementById('pagination-controls-matriz');
+
+        tbody.innerHTML = '';
+
+        if (!currentPerfilId || matrizEdicion.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 60px 40px; color: #94a3b8;"><i class="fas fa-mouse-pointer" style="font-size: 2.5rem; margin-bottom: 15px; opacity:0.3; display:block;"></i>Selecciona un perfil en la parte superior para configurar sus accesos.</td></tr>';
+            btnGuardar.style.display = 'none';
+            btnCancelar.style.display = 'none';
+            pagControls.innerHTML = '';
+            return;
+        }
+
+        // Mostrar botones si tiene permisos
         if(permisos.bitEditar) {
             btnGuardar.style.display = 'flex';
             btnCancelar.style.display = 'inline-block';
         }
 
-        // Pintamos TODOS los módulos existentes en la base de datos
-        modulosDisponibles.forEach(modulo => {
-            // Buscamos si ya existe un registro de permiso para [Este Perfil] + [Este Módulo]
-            const permisoActual = permisosData.find(p => p.idPerfil == perfilIdSeleccionado && p.idModulo == modulo.id);
+        const disabledAttr = permisos.bitEditar ? '' : 'disabled';
+        
+        // Paginación lógica
+        const start = (currentPage - 1) * rowsPerPage; 
+        const paginatedData = matrizEdicion.slice(start, start + rowsPerPage);
 
+        paginatedData.forEach((item, index) => {
+            const globalIndex = start + index; // Índice real en matrizEdicion
             const tr = document.createElement('tr');
             tr.className = 'ux-table-row';
-            tr.dataset.moduloId = modulo.id;
-            tr.dataset.permisoId = permisoActual ? permisoActual.id : ''; // Si existe guardamos su ID para hacer PUT, si no hacemos POST
-
-            const bitAgr = permisoActual ? permisoActual.bitAgregar : false;
-            const bitEdi = permisoActual ? permisoActual.bitEditar : false;
-            const bitEli = permisoActual ? permisoActual.bitEliminar : false;
-            const bitCon = permisoActual ? permisoActual.bitConsulta : false;
-
+            
             tr.innerHTML = `
-                <td style="color: #0f172a; font-weight: 600; font-size: 0.95rem;">${modulo.strNombreModulo}</td>
-                <td style="text-align: center;"><input type="checkbox" class="matriz-checkbox chk-agr" ${bitAgr ? 'checked' : ''} ${disabledAttr}></td>
-                <td style="text-align: center;"><input type="checkbox" class="matriz-checkbox chk-edi" ${bitEdi ? 'checked' : ''} ${disabledAttr}></td>
-                <td style="text-align: center;"><input type="checkbox" class="matriz-checkbox chk-eli" ${bitEli ? 'checked' : ''} ${disabledAttr}></td>
-                <td style="text-align: center;"><input type="checkbox" class="matriz-checkbox chk-con" ${bitCon ? 'checked' : ''} ${disabledAttr}></td>
+                <td style="padding: 15px 20px; color: #0f172a; font-weight: 600; font-size: 0.95rem;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="background: #f8fafc; color: #64748b; width: 32px; height: 32px; border-radius: 8px; display: flex; justify-content: center; align-items: center; border: 1px solid #e2e8f0;">
+                            <i class="fas fa-cube"></i>
+                        </div>
+                        ${item.strNombreModulo}
+                    </div>
+                </td>
+                <td style="padding: 15px 20px; text-align: center;"><input type="checkbox" class="matriz-checkbox" data-idx="${globalIndex}" data-field="bitAgregar" ${item.bitAgregar ? 'checked' : ''} ${disabledAttr}></td>
+                <td style="padding: 15px 20px; text-align: center;"><input type="checkbox" class="matriz-checkbox" data-idx="${globalIndex}" data-field="bitEditar" ${item.bitEditar ? 'checked' : ''} ${disabledAttr}></td>
+                <td style="padding: 15px 20px; text-align: center;"><input type="checkbox" class="matriz-checkbox" data-idx="${globalIndex}" data-field="bitEliminar" ${item.bitEliminar ? 'checked' : ''} ${disabledAttr}></td>
+                <td style="padding: 15px 20px; text-align: center;"><input type="checkbox" class="matriz-checkbox" data-idx="${globalIndex}" data-field="bitConsulta" ${item.bitConsulta ? 'checked' : ''} ${disabledAttr}></td>
             `;
             tbody.appendChild(tr);
         });
+
+        // EventListeners Dinámicos: Actualizamos el estado "matrizEdicion" cuando el usuario hace clic en un checkbox
+        tbody.querySelectorAll('.matriz-checkbox').forEach(chk => {
+            chk.addEventListener('change', (e) => {
+                const idx = parseInt(e.target.dataset.idx);
+                const field = e.target.dataset.field;
+                matrizEdicion[idx][field] = e.target.checked; // Guardamos en memoria
+            });
+        });
+
+        renderPaginationControls();
     }
 
-    // --- GUARDAR TODA LA CUADRÍCULA ---
+    function renderPaginationControls() {
+        const controls = document.getElementById('pagination-controls-matriz'); 
+        controls.innerHTML = '';
+        const pageCount = Math.ceil(matrizEdicion.length / rowsPerPage);
+        
+        if(pageCount <= 1) return; 
+
+        for (let i = 1; i <= pageCount; i++) {
+            const btn = document.createElement('button'); 
+            btn.textContent = i; 
+            btn.style.cssText = `background: ${i === currentPage ? '#2563eb' : '#ffffff'}; color: ${i === currentPage ? '#ffffff' : '#475569'}; border: 1px solid ${i === currentPage ? '#2563eb' : '#e2e8f0'}; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s;`;
+            if (i !== currentPage) btn.onmouseover = () => btn.style.background = '#f1f5f9';
+            if (i !== currentPage) btn.onmouseout = () => btn.style.background = '#ffffff';
+            
+            btn.onclick = () => { 
+                currentPage = i; 
+                renderTablaPaginada(); 
+            }; 
+            controls.appendChild(btn);
+        }
+    }
+
+    // --- GUARDAR TODA LA MATRIZ (LEE DESDE LA MEMORIA) ---
     async function guardarMatrizCompleta() {
-        const perfilId = parseInt(document.getElementById('sel-perfil-buscador').value);
-        if (!perfilId) return;
+        if (!currentPerfilId) return;
 
         const btnSave = document.getElementById('btn-guardar-matriz');
         const originalContent = btnSave.innerHTML;
         btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Procesando...</span>';
         btnSave.disabled = true;
 
-        const filas = document.querySelectorAll('#tabla-matriz-body tr.ux-table-row');
         const peticionesHTTP = [];
 
-        filas.forEach(fila => {
-            const modId = parseInt(fila.dataset.moduloId);
-            const permId = fila.dataset.permisoId; // String, vacío si es nuevo
-
-            const chkAgr = fila.querySelector('.chk-agr').checked;
-            const chkEdi = fila.querySelector('.chk-edi').checked;
-            const chkEli = fila.querySelector('.chk-eli').checked;
-            const chkCon = fila.querySelector('.chk-con').checked;
-
+        // Iteramos sobre nuestro array en memoria que tiene todas las páginas actualizadas
+        matrizEdicion.forEach(item => {
             const payload = {
-                idPerfil: perfilId,
-                idModulo: modId,
-                bitAgregar: chkAgr,
-                bitEditar: chkEdi,
-                bitEliminar: chkEli,
-                bitConsulta: chkCon,
+                idPerfil: currentPerfilId,
+                idModulo: item.idModulo,
+                bitAgregar: item.bitAgregar,
+                bitEditar: item.bitEditar,
+                bitEliminar: item.bitEliminar,
+                bitConsulta: item.bitConsulta,
                 bitDetalle: false
             };
 
-            if (permId) {
-                // Si el permiso ya existía en la BD, hacemos un UPDATE (PUT)
+            if (item.permisoId) {
+                // UPDATE (PUT)
                 peticionesHTTP.push(
-                    fetch(`/api/v1/permisos/${permId}`, {
+                    fetch(`/api/v1/permisos/${item.permisoId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
                         body: JSON.stringify(payload)
                     })
                 );
             } else {
-                // Si NO existía, hacemos un INSERT (POST), pero SOLO si al menos marcó una casilla
-                if (chkAgr || chkEdi || chkEli || chkCon) {
+                // INSERT (POST) solo si al menos marcó un checkbox
+                if (item.bitAgregar || item.bitEditar || item.bitEliminar || item.bitConsulta) {
                     peticionesHTTP.push(
                         fetch(`/api/v1/permisos`, {
                             method: 'POST',
@@ -267,13 +323,11 @@ const PermisoModule = (() => {
         });
 
         try {
-            // Ejecutamos TODAS las peticiones al servidor simultáneamente
             await Promise.all(peticionesHTTP);
             showToast('¡Configuración Guardada!', 'Los privilegios del perfil han sido actualizados exitosamente.', 'success');
             
-            // Recargamos silenciosamente los datos de la BD y refrescamos la tabla
             await refrescarDataPermisos();
-            renderMatriz(perfilId); 
+            construirMatrizState(currentPerfilId); // Reconstruye el estado con los nuevos IDs
 
         } catch (error) {
             showToast('Error', 'Hubo un problema de conexión al guardar.', 'error');
@@ -287,27 +341,23 @@ const PermisoModule = (() => {
     function setupEventListeners() {
         const selectPerfil = document.getElementById('sel-perfil-buscador');
         
-        // Cuando el usuario cambia de perfil en el Dropdown
         if (selectPerfil) {
             selectPerfil.addEventListener('change', (e) => {
-                const perfilId = e.target.value;
-                renderMatriz(perfilId);
+                construirMatrizState(e.target.value);
             });
         }
 
-        // Botón Guardar Matriz
         const btnGuardar = document.getElementById('btn-guardar-matriz');
         if (btnGuardar) {
             btnGuardar.addEventListener('click', guardarMatrizCompleta);
         }
 
-        // Botón Cancelar (Restaura la tabla a como estaba en la base de datos)
         const btnCancelar = document.getElementById('btn-cancelar');
         if (btnCancelar) {
             btnCancelar.addEventListener('click', () => {
                 const perfilId = document.getElementById('sel-perfil-buscador').value;
-                renderMatriz(perfilId); // Vuelve a pintar los checks con los datos originales
-                showToast('Acción Cancelada', 'Se han restaurado los valores originales.', 'success');
+                construirMatrizState(perfilId); // Vuelve a leer de la DB y limpia el estado
+                showToast('Acción Descartada', 'Se han restaurado los valores originales.', 'success');
             });
         }
     }
