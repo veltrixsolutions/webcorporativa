@@ -556,3 +556,13 @@ input:checked + .slider:before { transform: translateX(24px); }
 /* Cambia los colores de los iconos según el tema activo */
 [data-theme="dark"] .moon-icon { color: #facc15; } /* Luna amarilla */
 [data-theme="dark"] .sun-icon { color: #475569; }  /* Sol apagado */
+
+.breadcrumbs .crumb.clickable {
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.breadcrumbs .crumb.clickable:hover {
+    color: var(--brand-primary);
+    text-decoration: underline;
+}
