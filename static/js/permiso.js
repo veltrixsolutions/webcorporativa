@@ -113,7 +113,7 @@ const PermisoModule = (() => {
         setupEventListeners();
     }
 
-    function getToken() { return localStorage.getItem('jwt_token'); }
+    function getToken() { return sessionStorage.getItem('jwt_token'); }
 
     async function cargarPermisosSeguridad(moduleId, perfilId) {
         if (perfilId === 1) { permisos = { bitAgregar: true, bitEditar: true, bitConsulta: true, bitEliminar: true, bitDetalle: true }; return; }

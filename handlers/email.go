@@ -80,3 +80,58 @@ func EnviarCorreoVerificacion(correoDestino, nombreUsuario, token, password stri
 	_, err := client.Emails.Send(params)
 	return err
 }
+
+// Recuperacion de contraseñas
+
+func EnviarCorreoRecuperacion(correoDestino, nombreUsuario, tokenRecuperacion string) error {
+	apiKey := os.Getenv("RESEND_API_KEY")
+	appUrl := os.Getenv("APP_URL")
+
+	client := resend.NewClient(apiKey)
+
+	// Este enlace llevará al usuario a una pantalla para escribir su nueva contraseña
+	link := fmt.Sprintf("%s/recuperar.html?token=%s", appUrl, tokenRecuperacion)
+
+	params := &resend.SendEmailRequest{
+		From:    "Veltrix Solutions <no-reply@kevin.rodnix.com.mx>",
+		To:      []string{correoDestino},
+		Subject: "Recuperación de Contraseña - Veltrix Solutions",
+		Html: fmt.Sprintf(`
+        <div style="background-color: #f4f7f6; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px 20px; color: #333333;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                
+                <div style="background-color: #1a56db; padding: 25px; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600; letter-spacing: 1px;">Veltrix Solutions</h1>
+                </div>
+                
+                <div style="padding: 40px 30px;">
+                    <h2 style="font-size: 20px; color: #1f2937; margin-top: 0;">Hola, %s</h2>
+                    <p style="font-size: 16px; line-height: 1.6; color: #4b5563;">
+                        Hemos recibido una solicitud para restablecer la contraseña de tu cuenta corporativa. 
+                    </p>
+
+                    <p style="font-size: 16px; line-height: 1.6; color: #4b5563;">
+                        Para crear una nueva contraseña y recuperar tu acceso, haz clic en el siguiente botón:
+                    </p>
+
+                    <div style="text-align: center; margin: 35px 0;">
+                        <a href="%s" style="background-color: #3b82f6; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; display: inline-block;">Restablecer mi contraseña</a>
+                    </div>
+
+                    <p style="font-size: 13px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 20px; margin-bottom: 0;">
+                        <strong style="color: #dc2626;">Nota:</strong> Si no solicitaste este cambio, puedes ignorar este correo. El enlace expirará en 15 minutos por seguridad.
+                    </p>
+                </div>
+                
+                <div style="background-color: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0;">
+                    <p style="margin: 0;">&copy; 2026 Veltrix Solutions. Todos los derechos reservados.</p>
+                </div>
+                
+            </div>
+        </div>
+        `, nombreUsuario, link),
+	}
+
+	_, err := client.Emails.Send(params)
+	return err
+}

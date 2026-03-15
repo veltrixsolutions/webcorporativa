@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restablecer Contraseña - Veltrix Solutions</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/login.css?v=3">
+</head>
+<body>
+
+    <div class="bg-shape shape-1"></div>
+    <div class="bg-shape shape-2"></div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <h1 id="titulo">Restablecer Contraseña</h1>
+            <p id="subtitulo" class="login-subtitle">Crea una nueva contraseña segura para tu cuenta.</p>
+            
+            <div id="alert-box" class="alert hidden"></div>
+            
+            <form id="reset-form">
+                <div class="form-group">
+                    <label for="new-pwd">Nueva Contraseña</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-key input-icon"></i>
+                        <input type="password" id="new-pwd" required placeholder="Mínimo 8 caracteres">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirm-pwd">Confirmar Contraseña</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-check-double input-icon"></i>
+                        <input type="password" id="confirm-pwd" required placeholder="Repite la contraseña">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit btn-success" style="background-color: #10b981; margin-bottom: 10px;">
+                    <i class="fas fa-save"></i> <span>Guardar y Entrar</span>
+                </button>
+            </form>
+
+            <div id="success-actions" style="display: none; text-align: center; margin-top: 20px;">
+                <a href="/login.html" class="btn-submit" style="display: inline-block; text-decoration: none; text-align: center;">
+                    Ir a Iniciar Sesión <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;" id="back-link">
+                <a href="/login.html" style="color: #64748b; font-size: 0.9rem; text-decoration: none;">Volver al login</a>
+            </div>
+        </div>
+        
+        <div class="login-footer">
+            &copy; 2026 Veltrix Solutions. Acceso restringido.
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('reset-form');
+            const alertBox = document.getElementById('alert-box');
+            const successActions = document.getElementById('success-actions');
+            const backLink = document.getElementById('back-link');
+
+            // 1. Extraer el token de la URL (ej: /recuperar.html?token=eyJhbG...)
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+
+            if (!token) {
+                form.style.display = 'none';
+                showAlert("Enlace de recuperación inválido o inexistente.", "error");
+                return;
+            }
+
+            const isStrongPassword = (password) => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,64}$/.test(password);
+
+            function showAlert(message, type) {
+                const icon = type === 'error' ? '<i class="fas fa-exclamation-triangle"></i>' : '<i class="fas fa-check-circle"></i>';
+                alertBox.innerHTML = `${icon} ${message}`;
+                alertBox.className = `alert ${type}`;
+                alertBox.classList.remove('hidden');
+            }
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                alertBox.classList.add('hidden');
+
+                const btnSubmit = form.querySelector('button[type="submit"]');
+                const originalBtnHtml = btnSubmit.innerHTML;
+                btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Procesando...</span>';
+                btnSubmit.disabled = true;
+
+                const newPwd = document.getElementById('new-pwd').value;
+                const confirmPwd = document.getElementById('confirm-pwd').value;
+
+                if (newPwd !== confirmPwd) {
+                    showAlert("Las contraseñas no coinciden.", "error");
+                    btnSubmit.innerHTML = originalBtnHtml;
+                    btnSubmit.disabled = false;
+                    return;
+                }
+
+                if (!isStrongPassword(newPwd)) {
+                    showAlert("La contraseña debe tener mínimo 8 caracteres, incluir una mayúscula, un número y un símbolo especial.", "error");
+                    btnSubmit.innerHTML = originalBtnHtml;
+                    btnSubmit.disabled = false;
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/reset-pwd', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token: token, nueva_pwd: newPwd })
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        showAlert(data.error || "No se pudo actualizar la contraseña.", "error");
+                        btnSubmit.innerHTML = originalBtnHtml;
+                        btnSubmit.disabled = false;
+                    } else {
+                        showAlert("¡Contraseña restablecida con éxito!", "success");
+                        form.style.display = 'none';
+                        backLink.style.display = 'none';
+                        successActions.style.display = 'block'; // Muestra el botón para ir al login
+                    }
+                } catch (error) {
+                    showAlert("Error de conexión al servidor.", "error");
+                    btnSubmit.innerHTML = originalBtnHtml;
+                    btnSubmit.disabled = false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

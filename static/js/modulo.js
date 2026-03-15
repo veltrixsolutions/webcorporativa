@@ -155,7 +155,7 @@ const ModuloApp = (() => {
         fetchModulos();
     }
 
-    function getToken() { return localStorage.getItem('jwt_token'); }
+    function getToken() { return sessionStorage.getItem('jwt_token'); }
 
     async function cargarPermisosSeguridad(moduleId, perfilId) {
         if (perfilId === 1) {

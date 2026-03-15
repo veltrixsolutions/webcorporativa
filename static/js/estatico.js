@@ -17,7 +17,7 @@ const ModuloEstatico = (() => {
         `;
 
         try {
-            const token = localStorage.getItem('jwt_token');
+            const token = sessionStorage.getItem('jwt_token');
             const res = await fetch(`/api/v1/mis-permisos/${moduleId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });

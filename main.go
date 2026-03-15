@@ -113,6 +113,9 @@ func main() {
 	api.POST("/login", handlers.Login(db), loginRateLimiter)
 	api.POST("/cambiar-pwd", handlers.ActualizarPasswordPrimerLogin(db), loginRateLimiter)
 
+	api.POST("/recuperar-pwd", handlers.SolicitarRecuperacionPwd(db), loginRateLimiter)
+	api.POST("/reset-pwd", handlers.RestablecerPassword(db), loginRateLimiter)
+
 	api.GET("/verificar-email", handlers.VerificarEmail(db))
 
 	// Grupo de rutas privadas protegidas con JWT

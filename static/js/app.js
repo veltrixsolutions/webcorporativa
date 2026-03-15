@@ -2,7 +2,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
-    // 1. LÓGICA DEL TEMA (MODO OSCURO / CLARO)
+    // 1. LÓGICA DEL TEMA (Se queda en localStorage para compartir entre pestañas)
     // ==========================================
     const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
     if (toggleSwitch) {
@@ -27,9 +27,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 2. AUTENTICACIÓN Y SEGURIDAD JWT
+    // 2. AUTENTICACIÓN (Ahora usa sessionStorage)
     // ==========================================
-    const token = localStorage.getItem('jwt_token');
+    const token = sessionStorage.getItem('jwt_token'); // <-- CAMBIO AQUÍ
     if (!token) { window.location.href = '/login.html'; return; }
 
     function parseJwt(token) {
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const userData = parseJwt(token);
     if (!userData) {
-        localStorage.removeItem('jwt_token');
+        sessionStorage.removeItem('jwt_token'); // <-- CAMBIO AQUÍ
         window.location.href = '/login.html';
         return;
     }
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnLogout = document.getElementById('btn-logout');
     if (btnLogout) {
         btnLogout.addEventListener('click', () => {
-            localStorage.removeItem('jwt_token');
+            sessionStorage.removeItem('jwt_token'); // <-- CAMBIO AQUÍ
             window.location.href = '/login.html'; 
         });
     }
@@ -74,14 +74,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 4. CARGA DINÁMICA DEL MENÚ Y BREADCRUMBS
+    // 4. CARGA DINÁMICA DEL MENÚ
     // ==========================================
     async function loadMenu() {
         let menus = [];
         try {
             const response = await fetch('/api/v1/menu', { headers: { 'Authorization': `Bearer ${token}` } });
             if (response.status === 401 || response.status === 403) {
-                localStorage.removeItem('jwt_token');
+                sessionStorage.removeItem('jwt_token'); // <-- CAMBIO AQUÍ
                 window.location.href = '/login.html';
                 return;
             }
@@ -137,7 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // NUEVO: Función para regresar al inicio (Welcome screen)
     function goHome() {
         const breadcrumbs = document.getElementById('breadcrumbs');
         if (breadcrumbs) {
@@ -155,11 +154,9 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
 
-        // Quitar la clase "active" de todos los items del menú lateral
         document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
     }
 
-    // ACTUALIZADO: Las migas de pan ahora inyectan la funcionalidad de clic
     function updateBreadcrumbs(menuName, moduleName) {
         const breadcrumbs = document.getElementById('breadcrumbs');
         if (breadcrumbs) {
@@ -170,13 +167,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="separator">/</span>
                 <span class="crumb" style="color: var(--brand-primary);">${moduleName}</span>
             `;
-            
-            // Le asignamos el evento al botón de "Inicio" recién creado
             document.getElementById('crumb-inicio').addEventListener('click', goHome);
         }
     }
 
-    // Inicializar el botón "Inicio" estático la primera vez que carga la página
     const initialInicioCrumb = document.querySelector('#breadcrumbs .crumb');
     if (initialInicioCrumb) {
         initialInicioCrumb.classList.add('clickable');
@@ -185,9 +179,6 @@ document.addEventListener('DOMContentLoaded', () => {
         initialInicioCrumb.addEventListener('click', goHome);
     }
 
-    // ==========================================
-    // 5. CARGA DE MÓDULOS (RUTEO INTERNO)
-    // ==========================================
     function loadModuleContent(moduleId, moduleName, perfilId) {
         const container = document.getElementById('module-content');
         if (!container) return;

@@ -4,6 +4,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -180,5 +181,115 @@ func ActualizarPasswordPrimerLogin(db *sql.DB) echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusOK, map[string]string{"mensaje": "Contraseña actualizada correctamente. Ya puedes iniciar sesión."})
+	}
+}
+
+// ==========================================
+// ESTRUCTURAS PARA RECUPERACIÓN DE CONTRASEÑA
+// ==========================================
+type RecuperarPwdReq struct {
+	Correo string `json:"correo"`
+}
+
+type ResetPwdReq struct {
+	Token    string `json:"token"`
+	NuevaPwd string `json:"nueva_pwd"`
+}
+
+// --- 4. SOLICITAR RECUPERACIÓN (Envía el correo) ---
+func SolicitarRecuperacionPwd(db *sql.DB) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		req := new(RecuperarPwdReq)
+		if err := c.Bind(req); err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Datos inválidos"})
+		}
+
+		var usuarioID int
+		var nombreUsuario string
+
+		// Buscamos el usuario por correo. Aseguramos que esté activo.
+		query := `SELECT id, strNombreUsuario FROM Usuario WHERE strCorreo = $1 AND idEstadoUsuario = 1`
+		err := db.QueryRow(query, req.Correo).Scan(&usuarioID, &nombreUsuario)
+
+		if err != nil {
+			// PRÁCTICA DE SEGURIDAD: Siempre devolvemos 200 OK aunque el correo no exista.
+			// Esto evita que atacantes enumeren correos válidos en tu sistema.
+			return c.JSON(http.StatusOK, map[string]string{"mensaje": "Si el correo existe, se ha enviado un enlace."})
+		}
+
+		// Generar un Token JWT válido solo por 15 minutos
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			"usuario_id": usuarioID,
+			"proposito":  "recuperacion",
+			"exp":        time.Now().Add(15 * time.Minute).Unix(),
+		})
+
+		jwtSecret := os.Getenv("JWT_SECRET")
+		if jwtSecret == "" {
+			jwtSecret = "clave_secreta_desarrollo"
+		}
+
+		tokenString, err := token.SignedString([]byte(jwtSecret))
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Error interno del servidor"})
+		}
+
+		// Enviar el correo usando la función que creamos en email.go
+		err = EnviarCorreoRecuperacion(req.Correo, nombreUsuario, tokenString)
+		if err != nil {
+			c.Logger().Error("Error enviando correo de recuperación: ", err)
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "No se pudo enviar el correo"})
+		}
+
+		return c.JSON(http.StatusOK, map[string]string{"mensaje": "Si el correo existe, se ha enviado un enlace."})
+	}
+}
+
+// --- 5. RESTABLECER CONTRASEÑA (Desde el enlace del correo) ---
+func RestablecerPassword(db *sql.DB) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		req := new(ResetPwdReq)
+		if err := c.Bind(req); err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Datos inválidos"})
+		}
+
+		jwtSecret := os.Getenv("JWT_SECRET")
+		if jwtSecret == "" {
+			jwtSecret = "clave_secreta_desarrollo"
+		}
+
+		// Validar y desencriptar el Token
+		token, err := jwt.Parse(req.Token, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("método de firma inesperado")
+			}
+			return []byte(jwtSecret), nil
+		})
+
+		if err != nil || !token.Valid {
+			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "El enlace es inválido o ha expirado."})
+		}
+
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok || claims["proposito"] != "recuperacion" {
+			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Token inválido para esta acción."})
+		}
+
+		// Extraer el ID del usuario del token (el float64 es como JWT parsea los números por defecto)
+		usuarioID := int(claims["usuario_id"].(float64))
+
+		// Encriptar la nueva contraseña
+		hashPwd, err := bcrypt.GenerateFromPassword([]byte(req.NuevaPwd), bcrypt.DefaultCost)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Error de procesamiento seguro"})
+		}
+
+		// Actualizar la base de datos y quitar la bandera de cambio forzado por si acaso
+		_, err = db.Exec("UPDATE Usuario SET strPwd = $1, bitForzarCambioPwd = FALSE WHERE id = $2", string(hashPwd), usuarioID)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Error al actualizar credenciales"})
+		}
+
+		return c.JSON(http.StatusOK, map[string]string{"mensaje": "Contraseña restablecida correctamente."})
 	}
 }
