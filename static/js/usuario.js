@@ -56,12 +56,16 @@ const UsuarioModule = (() => {
             </style>
 
             <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; gap: 15px;">
+                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; gap: 15px;">
                     <div>
-                        <h1 style="color: #0f172a; font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 5px;">Directorio de Usuarios</h1>
-                        <p style="color: #64748b; font-size: 1rem; margin: 0;">Administración de cuentas y accesos a la plataforma.</p>
+                        <h1 style="margin: 0; color: #0f172a; font-size: 1.75rem; font-weight: 700;">
+                            <i class="fas fa-users" style="color: #64748b; margin-right: 10px;"></i>Directorio de Usuarios
+                        </h1>
+                        <p style="margin: 5px 0 0 0; color: #64748b; font-size: 0.95rem;">Administración de cuentas y accesos a la plataforma.</p>
                     </div>
-                    <div>${btnNuevoHTML}</div>
+                    <div id="contenedor-btn-nuevo">
+                        ${btnNuevoHTML}
+                    </div>
                 </div>
 
                 <div class="search-container">

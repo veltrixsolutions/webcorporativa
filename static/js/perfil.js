@@ -1,6 +1,6 @@
-// static/js/perfil.js
 const PerfilModule = (() => {
     let perfilesData = [];
+    let filteredData = []; // Arreglo para manejar las búsquedas
     let currentPage = 1;
     const rowsPerPage = 5;
     let permisos = { bitAgregar: false, bitEditar: false, bitConsulta: false, bitEliminar: false, bitDetalle: false };
@@ -47,6 +47,12 @@ const PerfilModule = (() => {
                 .ux-input { width: 100%; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; color: #0f172a; transition: all 0.2s; background: #ffffff; }
                 .ux-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
                 .ux-input:disabled { background: #f1f5f9; cursor: not-allowed; opacity: 0.8; color: #64748b; }
+
+                /* Buscador Ajustado */
+                .search-container { position: relative; width: 100%; max-width: 500px; margin-bottom: 25px; }
+                .search-container i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem; }
+                .search-input { width: 100%; padding: 14px 16px 14px 45px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; background: #ffffff; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+                .search-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.15); }
             </style>
 
             <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
@@ -60,6 +66,11 @@ const PerfilModule = (() => {
                     <div id="contenedor-btn-nuevo">
                         ${btnNuevoHTML}
                     </div>
+                </div>
+
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="buscador-perfiles" class="search-input" placeholder="Buscar perfiles por nombre..." autocomplete="off">
                 </div>
 
                 <div style="background: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: hidden;">
@@ -187,7 +198,27 @@ const PerfilModule = (() => {
     }
 
     async function fetchPerfiles() {
-        try { const res = await fetch('/api/v1/perfiles', { headers: { 'Authorization': `Bearer ${getToken()}` } }); if (res.ok) { perfilesData = await res.json() || []; currentPage = 1; renderTable(); } } catch (e) { console.error(e); }
+        try { 
+            const res = await fetch('/api/v1/perfiles', { headers: { 'Authorization': `Bearer ${getToken()}` } }); 
+            if (res.ok) { 
+                perfilesData = await res.json() || []; 
+                filtrarPerfiles(); // Llama al filtro inicial
+            } 
+        } catch (e) { console.error(e); }
+    }
+
+    // --- LÓGICA DE BÚSQUEDA ---
+    function filtrarPerfiles() {
+        const searchTerm = document.getElementById('buscador-perfiles').value.toLowerCase().trim();
+        
+        if (searchTerm === '') {
+            filteredData = [...perfilesData]; 
+        } else {
+            filteredData = perfilesData.filter(p => p.strNombrePerfil.toLowerCase().includes(searchTerm));
+        }
+
+        currentPage = 1; 
+        renderTable();
     }
 
     async function savePerfil(data, id) {
@@ -204,6 +235,7 @@ const PerfilModule = (() => {
             if (res.ok) { 
                 closeModal();
                 showToast('¡Éxito!', id ? 'Perfil actualizado correctamente.' : 'Perfil creado exitosamente.', 'success'); 
+                document.getElementById('buscador-perfiles').value = ''; // Limpiamos la búsqueda tras guardar
                 fetchPerfiles(); 
             } else { 
                 showToast("Error", "No se pudo guardar la información del perfil.", "error"); 
@@ -228,14 +260,41 @@ const PerfilModule = (() => {
     }
 
     function renderTable() {
-        const tbody = document.getElementById('tabla-perfiles-body'); tbody.innerHTML = '';
-        const start = (currentPage - 1) * rowsPerPage; const paginated = perfilesData.slice(start, start + rowsPerPage);
+        const tbody = document.getElementById('tabla-perfiles-body'); 
+        tbody.innerHTML = '';
         
-        if (paginated.length === 0) { 
-            tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 40px; color: #94a3b8;"><div style="font-size: 2rem; margin-bottom: 10px;"><i class="fas fa-users-slash"></i></div>No hay perfiles registrados en el sistema.</td></tr>`; 
+        const start = (currentPage - 1) * rowsPerPage; 
+        const paginated = filteredData.slice(start, start + rowsPerPage);
+        
+        // --- MANEJO DE ESTADOS VACÍOS ---
+        if (filteredData.length === 0) { 
+            const searchTerm = document.getElementById('buscador-perfiles').value;
+            if (searchTerm) {
+                tbody.innerHTML = `
+                    <tr><td colspan="3" style="text-align:center; padding: 50px 20px; color: #64748b;">
+                        <div style="font-size: 2.5rem; margin-bottom: 15px; color: #94a3b8;"><i class="fas fa-search-minus"></i></div>
+                        <h3 style="color: #334155; margin-bottom: 5px;">No encontramos coincidencias</h3>
+                        <p style="font-size: 0.95rem;">No hay perfiles con el nombre "<b>${searchTerm}</b>".</p>
+                        <button id="btn-limpiar-busqueda-perfil" style="margin-top: 15px; background: transparent; border: 1px solid #cbd5e1; color: #3b82f6; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s;">Limpiar Búsqueda</button>
+                    </td></tr>`;
+                
+                setTimeout(() => {
+                    const btnLimpiar = document.getElementById('btn-limpiar-busqueda-perfil');
+                    if (btnLimpiar) {
+                        btnLimpiar.addEventListener('click', () => {
+                            document.getElementById('buscador-perfiles').value = '';
+                            filtrarPerfiles();
+                        });
+                    }
+                }, 0);
+            } else {
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 40px; color: #94a3b8;"><div style="font-size: 2rem; margin-bottom: 10px;"><i class="fas fa-users-slash"></i></div>No hay perfiles registrados en el sistema.</td></tr>`; 
+            }
+            renderPaginationControls();
             return; 
         }
 
+        // --- RENDERIZADO DE FILAS ---
         paginated.forEach(p => {
             const tr = document.createElement('tr');
             tr.className = 'ux-table-row';
@@ -262,6 +321,7 @@ const PerfilModule = (() => {
                 td.style.borderBottom = '1px solid #f1f5f9';
                 td.style.textAlign = 'right';
 
+                // Botones limpios, solo icono
                 if (permisos.bitEditar) { 
                     const b = document.createElement('button'); 
                     b.innerHTML = '<i class="fas fa-pen"></i>'; 
@@ -273,7 +333,7 @@ const PerfilModule = (() => {
                     td.appendChild(b); 
                 }
                 
-                // Si el perfil es el Admin principal (id = 1), evitamos que se pueda eliminar
+                // Evitamos eliminar al Admin Principal
                 if (permisos.bitEliminar && p.id !== 1) { 
                     const b = document.createElement('button'); 
                     b.innerHTML = '<i class="fas fa-trash-alt"></i>'; 
@@ -292,19 +352,38 @@ const PerfilModule = (() => {
     }
 
     function renderPaginationControls() {
-        const controls = document.getElementById('pagination-controls'); controls.innerHTML = '';
-        const pageCount = Math.ceil(perfilesData.length / rowsPerPage);
+        const controls = document.getElementById('pagination-controls'); 
+        controls.innerHTML = '';
+        const pageCount = Math.ceil(filteredData.length / rowsPerPage);
+        
         if(pageCount <= 1) return; 
 
+        const createBtn = (text, pageNum, disabled = false, icon = null) => {
+            const btn = document.createElement('button');
+            const innerContent = icon ? `<i class="${icon}"></i>` : text;
+            btn.innerHTML = innerContent;
+            
+            if (disabled) {
+                btn.style.cssText = `background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; margin: 2px; cursor: not-allowed; opacity: 0.7;`;
+                btn.disabled = true;
+            } else {
+                const isCurrent = pageNum === currentPage && text !== 'Inicio' && text !== 'Fin';
+                btn.style.cssText = `background: ${isCurrent ? '#2563eb' : '#ffffff'}; color: ${isCurrent ? '#ffffff' : '#475569'}; border: 1px solid ${isCurrent ? '#2563eb' : '#e2e8f0'}; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s; margin: 2px;`;
+                if (!isCurrent) btn.onmouseover = () => btn.style.background = '#f1f5f9';
+                if (!isCurrent) btn.onmouseout = () => btn.style.background = '#ffffff';
+                btn.onclick = () => { currentPage = pageNum; renderTable(); };
+            }
+            return btn;
+        };
+
+        // Controles de Inicio y Fin
+        controls.appendChild(createBtn('Inicio', 1, currentPage === 1, 'fas fa-angle-double-left'));
+
         for (let i = 1; i <= pageCount; i++) {
-            const btn = document.createElement('button'); 
-            btn.textContent = i; 
-            btn.style.cssText = `background: ${i === currentPage ? '#2563eb' : '#ffffff'}; color: ${i === currentPage ? '#ffffff' : '#475569'}; border: 1px solid ${i === currentPage ? '#2563eb' : '#e2e8f0'}; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s; margin: 2px;`;
-            if (i !== currentPage) btn.onmouseover = () => btn.style.background = '#f1f5f9';
-            if (i !== currentPage) btn.onmouseout = () => btn.style.background = '#ffffff';
-            btn.onclick = () => { currentPage = i; renderTable(); }; 
-            controls.appendChild(btn);
+            controls.appendChild(createBtn(i, i));
         }
+
+        controls.appendChild(createBtn('Fin', pageCount, currentPage === pageCount, 'fas fa-angle-double-right'));
     }
 
     function setupEventListeners() {
@@ -327,6 +406,13 @@ const PerfilModule = (() => {
                 bitAdministrador: document.getElementById('es-admin').value === 'true' 
             }, document.getElementById('perfil-id').value); 
         });
+
+        // Eventos del buscador
+        const inputBuscador = document.getElementById('buscador-perfiles');
+        if (inputBuscador) {
+            inputBuscador.addEventListener('keyup', filtrarPerfiles);
+            inputBuscador.addEventListener('search', filtrarPerfiles); 
+        }
     }
     
     return { render: renderView };
