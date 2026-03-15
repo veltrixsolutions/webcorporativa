@@ -47,10 +47,13 @@ const PermisoModule = (() => {
             </style>
 
             <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px;">
+                
+                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; gap: 15px;">
                     <div>
-                        <h1 style="color: #0f172a; font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 5px;">Matriz de Permisos</h1>
-                        <p style="color: #64748b; font-size: 1rem; margin: 0;">Selecciona un perfil y configura sus accesos a los diferentes módulos.</p>
+                        <h1 style="margin: 0; color: #0f172a; font-size: 1.75rem; font-weight: 700;">
+                            <i class="fas fa-user-shield" style="color: #64748b; margin-right: 10px;"></i>Matriz de Permisos
+                        </h1>
+                        <p style="margin: 5px 0 0 0; color: #64748b; font-size: 0.95rem;">Selecciona un perfil y configura sus accesos a los diferentes módulos.</p>
                     </div>
                 </div>
 
@@ -86,7 +89,7 @@ const PermisoModule = (() => {
                         </table>
                     </div>
                     
-                    <div id="pagination-controls-matriz" style="padding: 15px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: center; gap: 8px; background: #fdfdfd;"></div>
+                    <div id="pagination-controls-matriz" style="padding: 15px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: center; gap: 8px; background: #fdfdfd; flex-wrap: wrap;"></div>
                     
                     <div style="padding: 20px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 15px;">
                         <button type="button" id="btn-cancelar" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: none;">Descartar Cambios</button>
@@ -174,13 +177,12 @@ const PermisoModule = (() => {
             return;
         }
 
-        // Creamos un array que actuará como nuestro "estado temporal"
         matrizEdicion = modulosDisponibles.map(modulo => {
             const dbPerm = permisosData.find(p => p.idPerfil === currentPerfilId && p.idModulo === modulo.id);
             return {
                 idModulo: modulo.id,
                 strNombreModulo: modulo.strNombreModulo,
-                permisoId: dbPerm ? dbPerm.id : null, // Nos sirve para saber si haremos PUT o POST
+                permisoId: dbPerm ? dbPerm.id : null,
                 bitAgregar: dbPerm ? dbPerm.bitAgregar : false,
                 bitEditar: dbPerm ? dbPerm.bitEditar : false,
                 bitEliminar: dbPerm ? dbPerm.bitEliminar : false,
@@ -216,12 +218,11 @@ const PermisoModule = (() => {
 
         const disabledAttr = permisos.bitEditar ? '' : 'disabled';
         
-        // Paginación lógica
         const start = (currentPage - 1) * rowsPerPage; 
         const paginatedData = matrizEdicion.slice(start, start + rowsPerPage);
 
         paginatedData.forEach((item, index) => {
-            const globalIndex = start + index; // Índice real en matrizEdicion
+            const globalIndex = start + index; 
             const tr = document.createElement('tr');
             tr.className = 'ux-table-row';
             
@@ -242,12 +243,12 @@ const PermisoModule = (() => {
             tbody.appendChild(tr);
         });
 
-        // EventListeners Dinámicos: Actualizamos el estado "matrizEdicion" cuando el usuario hace clic en un checkbox
+        // EventListeners Dinámicos
         tbody.querySelectorAll('.matriz-checkbox').forEach(chk => {
             chk.addEventListener('change', (e) => {
                 const idx = parseInt(e.target.dataset.idx);
                 const field = e.target.dataset.field;
-                matrizEdicion[idx][field] = e.target.checked; // Guardamos en memoria
+                matrizEdicion[idx][field] = e.target.checked; 
             });
         });
 
@@ -261,22 +262,35 @@ const PermisoModule = (() => {
         
         if(pageCount <= 1) return; 
 
-        for (let i = 1; i <= pageCount; i++) {
-            const btn = document.createElement('button'); 
-            btn.textContent = i; 
-            btn.style.cssText = `background: ${i === currentPage ? '#2563eb' : '#ffffff'}; color: ${i === currentPage ? '#ffffff' : '#475569'}; border: 1px solid ${i === currentPage ? '#2563eb' : '#e2e8f0'}; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s;`;
-            if (i !== currentPage) btn.onmouseover = () => btn.style.background = '#f1f5f9';
-            if (i !== currentPage) btn.onmouseout = () => btn.style.background = '#ffffff';
+        const createBtn = (text, pageNum, disabled = false, icon = null) => {
+            const btn = document.createElement('button');
+            const innerContent = icon ? `<i class="${icon}"></i>` : text;
+            btn.innerHTML = innerContent;
             
-            btn.onclick = () => { 
-                currentPage = i; 
-                renderTablaPaginada(); 
-            }; 
-            controls.appendChild(btn);
+            if (disabled) {
+                btn.style.cssText = `background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; margin: 2px; cursor: not-allowed; opacity: 0.7;`;
+                btn.disabled = true;
+            } else {
+                const isCurrent = pageNum === currentPage && text !== 'Inicio' && text !== 'Fin';
+                btn.style.cssText = `background: ${isCurrent ? '#2563eb' : '#ffffff'}; color: ${isCurrent ? '#ffffff' : '#475569'}; border: 1px solid ${isCurrent ? '#2563eb' : '#e2e8f0'}; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s; margin: 2px;`;
+                if (!isCurrent) btn.onmouseover = () => btn.style.background = '#f1f5f9';
+                if (!isCurrent) btn.onmouseout = () => btn.style.background = '#ffffff';
+                btn.onclick = () => { currentPage = pageNum; renderTablaPaginada(); };
+            }
+            return btn;
+        };
+
+        // Paginación con Inicio y Fin unificados
+        controls.appendChild(createBtn('Inicio', 1, currentPage === 1, 'fas fa-angle-double-left'));
+
+        for (let i = 1; i <= pageCount; i++) {
+            controls.appendChild(createBtn(i, i));
         }
+
+        controls.appendChild(createBtn('Fin', pageCount, currentPage === pageCount, 'fas fa-angle-double-right'));
     }
 
-    // --- GUARDAR TODA LA MATRIZ (LEE DESDE LA MEMORIA) ---
+    // --- GUARDAR TODA LA MATRIZ ---
     async function guardarMatrizCompleta() {
         if (!currentPerfilId) return;
 
@@ -287,7 +301,6 @@ const PermisoModule = (() => {
 
         const peticionesHTTP = [];
 
-        // Iteramos sobre nuestro array en memoria que tiene todas las páginas actualizadas
         matrizEdicion.forEach(item => {
             const payload = {
                 idPerfil: currentPerfilId,
@@ -300,7 +313,6 @@ const PermisoModule = (() => {
             };
 
             if (item.permisoId) {
-                // UPDATE (PUT)
                 peticionesHTTP.push(
                     fetch(`/api/v1/permisos/${item.permisoId}`, {
                         method: 'PUT',
@@ -309,7 +321,6 @@ const PermisoModule = (() => {
                     })
                 );
             } else {
-                // INSERT (POST) solo si al menos marcó un checkbox
                 if (item.bitAgregar || item.bitEditar || item.bitEliminar || item.bitConsulta) {
                     peticionesHTTP.push(
                         fetch(`/api/v1/permisos`, {
@@ -327,7 +338,7 @@ const PermisoModule = (() => {
             showToast('¡Configuración Guardada!', 'Los privilegios del perfil han sido actualizados exitosamente.', 'success');
             
             await refrescarDataPermisos();
-            construirMatrizState(currentPerfilId); // Reconstruye el estado con los nuevos IDs
+            construirMatrizState(currentPerfilId); 
 
         } catch (error) {
             showToast('Error', 'Hubo un problema de conexión al guardar.', 'error');
@@ -356,7 +367,7 @@ const PermisoModule = (() => {
         if (btnCancelar) {
             btnCancelar.addEventListener('click', () => {
                 const perfilId = document.getElementById('sel-perfil-buscador').value;
-                construirMatrizState(perfilId); // Vuelve a leer de la DB y limpia el estado
+                construirMatrizState(perfilId); 
                 showToast('Acción Descartada', 'Se han restaurado los valores originales.', 'success');
             });
         }
