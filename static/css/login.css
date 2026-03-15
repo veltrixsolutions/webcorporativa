@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 * {
     margin: 0;
@@ -17,7 +17,7 @@ body {
     overflow: hidden;
 }
 
-/* --- DECORACIONES DE FONDO (Efecto Nube/Moderno) --- */
+/* --- DECORACIONES DE FONDO --- */
 .bg-shape {
     position: absolute;
     border-radius: 50%;
@@ -26,30 +26,15 @@ body {
     opacity: 0.6;
     animation: float 10s infinite ease-in-out alternate;
 }
-
-.shape-1 {
-    width: 400px;
-    height: 400px;
-    background: #bfdbfe; /* Azul muy claro */
-    top: -100px;
-    left: -100px;
-}
-
-.shape-2 {
-    width: 500px;
-    height: 500px;
-    background: #ddd6fe; /* Morado muy claro */
-    bottom: -150px;
-    right: -100px;
-    animation-delay: -5s;
-}
+.shape-1 { width: 400px; height: 400px; background: #bfdbfe; top: -100px; left: -100px; }
+.shape-2 { width: 500px; height: 500px; background: #ddd6fe; bottom: -150px; right: -100px; animation-delay: -5s; }
 
 @keyframes float {
     0% { transform: translateY(0) scale(1); }
     100% { transform: translateY(30px) scale(1.05); }
 }
 
-/* --- CONTENEDORES PRINCIPALES --- */
+/* --- CONTENEDORES --- */
 .login-container {
     width: 100%;
     max-width: 460px;
@@ -63,37 +48,6 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- CABECERA DE MARCA --- */
-.brand-header {
-    text-align: center;
-    margin-bottom: 30px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-}
-
-.brand-logo {
-    width: 56px;
-    height: 56px;
-    background: linear-gradient(135deg, #2563eb, #1d4ed8);
-    color: white;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.8rem;
-    box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
-}
-
-.brand-name {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: #0f172a;
-    letter-spacing: -0.5px;
-}
-
-/* --- TARJETA DE LOGIN --- */
 .login-card {
     background: #ffffff;
     padding: 40px 35px;
@@ -118,7 +72,7 @@ h1 {
     margin-bottom: 30px;
 }
 
-/* --- ALERTAS Y NOTIFICACIONES --- */
+/* --- ALERTAS Y NOTAS --- */
 .alert {
     padding: 14px 20px;
     border-radius: 10px;
@@ -131,20 +85,9 @@ h1 {
     justify-content: center;
     gap: 8px;
 }
-
 .alert.hidden { display: none; }
-
-.alert.error {
-    background-color: #fef2f2;
-    color: #b91c1c;
-    border: 1px solid #fecaca;
-}
-
-.alert.success {
-    background-color: #ecfdf5;
-    color: #065f46;
-    border: 1px solid #a7f3d0;
-}
+.alert.error { background-color: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+.alert.success { background-color: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
 
 .security-notice {
     background: #fffbeb;
@@ -156,19 +99,14 @@ h1 {
     gap: 12px;
     align-items: flex-start;
 }
-
-.security-notice p {
-    margin: 0;
-    font-size: 0.9rem;
-    color: #92400e;
-    line-height: 1.5;
+.security-notice.info {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1e40af;
 }
-
-.notice-icon {
-    color: #d97706;
-    font-size: 1.2rem;
-    margin-top: 2px;
-}
+.security-notice p { margin: 0; font-size: 0.9rem; color: inherit; line-height: 1.5; }
+.notice-icon { font-size: 1.2rem; margin-top: 2px; color: #d97706; }
+.security-notice.info .notice-icon { color: #3b82f6; }
 
 /* --- FORMULARIOS E INPUTS --- */
 .form-group {
@@ -177,31 +115,22 @@ h1 {
     margin-bottom: 20px;
 }
 
-label {
-    font-size: 0.9rem;
-    color: #334155;
+label { font-size: 0.9rem; color: #334155; margin-bottom: 8px; font-weight: 600; }
+
+.pwd-header {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
     margin-bottom: 8px;
-    font-weight: 600;
 }
+.pwd-header label { margin-bottom: 0; }
+.forgot-link { font-size: 0.85rem; color: #2563eb; text-decoration: none; font-weight: 500; }
+.forgot-link:hover { text-decoration: underline; }
 
-.input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
+.input-wrapper { position: relative; display: flex; align-items: center; }
+.input-icon { position: absolute; left: 16px; color: #94a3b8; font-size: 1.1rem; transition: color 0.3s; z-index: 2; }
 
-.input-icon {
-    position: absolute;
-    left: 16px;
-    color: #94a3b8;
-    font-size: 1.1rem;
-    transition: color 0.3s;
-    z-index: 2;
-}
-
-/* * AÑADIMOS input[type="email"] para que afecte al campo de Recuperación 
- * El padding izquierdo (45px) asegura que el texto no pise el icono
- */
+/* AQUÍ SE CORRIGE EL SOLAPAMIENTO DE LOS ICONOS */
 input[type="text"],
 input[type="password"],
 input[type="email"] {
@@ -224,18 +153,10 @@ input[type="email"]:focus {
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
 }
 
-/* Al enfocar el input contenedor, el icono se pinta azul */
-.input-wrapper:focus-within .input-icon {
-    color: #2563eb;
-}
+.input-wrapper:focus-within .input-icon { color: #2563eb; }
 
 /* --- RECAPTCHA --- */
-.recaptcha-wrapper {
-    display: flex; 
-    justify-content: center; 
-    margin: 25px 0;
-    transform: scale(0.95); /* Ajuste sutil para que no rompa el padding de la tarjeta */
-}
+.recaptcha-wrapper { display: flex; justify-content: center; margin: 25px 0; }
 
 /* --- BOTONES --- */
 .btn-submit {
@@ -254,83 +175,34 @@ input[type="email"]:focus {
     align-items: center;
     gap: 10px;
     box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+    margin-bottom: 12px;
 }
-
-.btn-submit:hover {
-    background-color: #1d4ed8;
-    box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
-    transform: translateY(-1px);
-}
-
+.btn-submit:hover { background-color: #1d4ed8; box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3); transform: translateY(-1px); }
 .btn-success { background-color: #10b981; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2); }
 .btn-success:hover { background-color: #059669; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3); }
 
+/* ESTE ES EL BOTÓN "VOLVER AL INICIO" QUE SE VEÍA MAL */
 .btn-cancel {
     width: 100%;
-    margin-top: 15px;
-    background: transparent;
-    border: none;
-    color: #64748b;
-    font-size: 0.95rem;
+    background-color: #ffffff;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    padding: 10px;
-    transition: color 0.2s;
+    transition: all 0.3s ease;
 }
-
-.btn-cancel:hover { color: #0f172a; }
+.btn-cancel:hover { background-color: #f8fafc; color: #0f172a; border-color: #94a3b8; }
 
 /* --- FOOTER --- */
-.login-footer {
-    text-align: center;
-    margin-top: 30px;
-    font-size: 0.85rem;
-    color: #94a3b8;
-    font-weight: 500;
-}
+.login-footer { text-align: center; margin-top: 30px; font-size: 0.85rem; color: #94a3b8; font-weight: 500; }
 
-/* --- RESPONSIVIDAD --- */
-@media (max-width: 480px) {
-    .login-card { padding: 30px 20px; }
-    h1 { font-size: 1.4rem; }
-    .recaptcha-wrapper { transform: scale(0.85); }
-}
+@media (max-width: 480px) { .login-card { padding: 30px 20px; } h1 { font-size: 1.4rem; } }
 
-/* --- ALERTA NOSCRIPT --- */
-.noscript-error {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 9999;
-    background-color: #b91c1c; /* Rojo corporativo de error */
-    color: white;
-    padding: 15px;
-    text-align: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    animation: slideDown 0.5s ease-out;
-}
-
-.noscript-content {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 15px;
-    max-width: 800px;
-    margin: 0 auto;
-}
-
-.noscript-content i {
-    font-size: 1.5rem;
-}
-
-.noscript-content p {
-    font-size: 0.9rem;
-    margin-top: 2px;
-    opacity: 0.9;
-}
-
-@keyframes slideDown {
-    from { transform: translateY(-100%); }
-    to { transform: translateY(0); }
-}
+.noscript-error { position: fixed; top: 0; left: 0; width: 100%; z-index: 9999; background-color: #b91c1c; color: white; padding: 15px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); animation: slideDown 0.5s ease-out; }
+.noscript-content { display: flex; justify-content: center; align-items: center; gap: 15px; max-width: 800px; margin: 0 auto; }
+.noscript-content i { font-size: 1.5rem; }
+.noscript-content p { font-size: 0.9rem; margin-top: 2px; opacity: 0.9; }
+@keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
