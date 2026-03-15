@@ -1,6 +1,6 @@
-// static/js/usuario.js
 const UsuarioModule = (() => {
     let usuariosData = [];
+    let filteredData = []; // Arreglo para manejar las búsquedas
     let perfilesDisponibles = [];
     let currentPage = 1;
     const rowsPerPage = 5;
@@ -47,15 +47,26 @@ const UsuarioModule = (() => {
                 
                 .ux-input { width: 100%; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; color: #0f172a; transition: all 0.2s; background: #ffffff; }
                 .ux-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+
+                /* Buscador Ajustado */
+                .search-container { position: relative; width: 100%; max-width: 500px; margin-bottom: 25px; }
+                .search-container i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem; }
+                .search-input { width: 100%; padding: 14px 16px 14px 45px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; background: #ffffff; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+                .search-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.15); }
             </style>
 
             <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; gap: 15px;">
                     <div>
                         <h1 style="color: #0f172a; font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 5px;">Directorio de Usuarios</h1>
                         <p style="color: #64748b; font-size: 1rem; margin: 0;">Administración de cuentas y accesos a la plataforma.</p>
                     </div>
                     <div>${btnNuevoHTML}</div>
+                </div>
+
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="buscador-usuarios" class="search-input" placeholder="Buscar por nombre o correo electrónico..." autocomplete="off">
                 </div>
 
                 <div style="background: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: hidden;">
@@ -73,7 +84,7 @@ const UsuarioModule = (() => {
                             <tbody id="tabla-usuarios-body"></tbody>
                         </table>
                     </div>
-                    <div id="pagination-controls-usr" style="padding: 15px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: center; gap: 8px; background: #fdfdfd;"></div>
+                    <div id="pagination-controls-usr" style="padding: 15px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: center; align-items: center; gap: 8px; background: #fdfdfd; flex-wrap: wrap;"></div>
                 </div>
             </div>
 
@@ -171,7 +182,6 @@ const UsuarioModule = (() => {
         setTimeout(() => { toast.classList.remove('show'); }, 4000);
     }
 
-    // Modal UX
     function openModal(isEdit = false, u = null) {
         document.getElementById('form-usuario').reset();
         document.getElementById('usuario-id').value = '';
@@ -215,8 +225,29 @@ const UsuarioModule = (() => {
     async function fetchUsuarios() {
         try { 
             const res = await fetch('/api/v1/usuarios', { headers: { 'Authorization': `Bearer ${getToken()}` } }); 
-            if (res.ok) { usuariosData = await res.json() || []; currentPage = 1; renderTable(); } 
+            if (res.ok) { 
+                usuariosData = await res.json() || []; 
+                filtrarUsuarios(); // Inicializa y renderiza
+            } 
         } catch (e) { console.error("Error obteniendo usuarios"); }
+    }
+
+    // --- LÓGICA DE BÚSQUEDA MULTI-CAMPO ---
+    function filtrarUsuarios() {
+        const searchTerm = document.getElementById('buscador-usuarios').value.toLowerCase().trim();
+        
+        if (searchTerm === '') {
+            filteredData = [...usuariosData]; 
+        } else {
+            // Permite buscar por nombre o correo
+            filteredData = usuariosData.filter(u => 
+                u.strNombreUsuario.toLowerCase().includes(searchTerm) || 
+                u.strCorreo.toLowerCase().includes(searchTerm)
+            );
+        }
+
+        currentPage = 1; 
+        renderTable();
     }
 
     async function saveUsuario(data, id) {
@@ -237,7 +268,8 @@ const UsuarioModule = (() => {
             }); 
             if (res.ok) { 
                 closeModal();
-                showToast('¡Guardado!', 'Usuario procesado correctamente. Revisa la bandeja de salida.', 'success'); 
+                showToast('¡Guardado!', 'Usuario procesado correctamente.', 'success'); 
+                document.getElementById('buscador-usuarios').value = ''; // Limpiar búsqueda para ver el cambio
                 fetchUsuarios(); 
             } else {
                 const errData = await res.json();
@@ -261,24 +293,49 @@ const UsuarioModule = (() => {
     }
 
     function renderTable() {
-        const tbody = document.getElementById('tabla-usuarios-body'); tbody.innerHTML = '';
-        const start = (currentPage - 1) * rowsPerPage; const paginated = usuariosData.slice(start, start + rowsPerPage);
+        const tbody = document.getElementById('tabla-usuarios-body'); 
+        tbody.innerHTML = '';
         
-        if (paginated.length === 0) { 
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 40px; color: #94a3b8;"><div style="font-size: 2rem; margin-bottom: 10px;"><i class="fas fa-users-slash"></i></div>No hay usuarios registrados.</td></tr>`; 
+        const start = (currentPage - 1) * rowsPerPage; 
+        const paginated = filteredData.slice(start, start + rowsPerPage);
+        
+        // --- MANEJO DE ESTADOS VACÍOS ---
+        if (filteredData.length === 0) { 
+            const searchTerm = document.getElementById('buscador-usuarios').value;
+            if (searchTerm) {
+                tbody.innerHTML = `
+                    <tr><td colspan="5" style="text-align:center; padding: 50px 20px; color: #64748b;">
+                        <div style="font-size: 2.5rem; margin-bottom: 15px; color: #94a3b8;"><i class="fas fa-search-minus"></i></div>
+                        <h3 style="color: #334155; margin-bottom: 5px;">No encontramos coincidencias</h3>
+                        <p style="font-size: 0.95rem;">No hay usuarios con el nombre o correo "<b>${searchTerm}</b>".</p>
+                        <button id="btn-limpiar-busqueda-usr" style="margin-top: 15px; background: transparent; border: 1px solid #cbd5e1; color: #3b82f6; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s;">Limpiar Búsqueda</button>
+                    </td></tr>`;
+                
+                setTimeout(() => {
+                    const btnLimpiar = document.getElementById('btn-limpiar-busqueda-usr');
+                    if (btnLimpiar) {
+                        btnLimpiar.addEventListener('click', () => {
+                            document.getElementById('buscador-usuarios').value = '';
+                            filtrarUsuarios();
+                        });
+                    }
+                }, 0);
+            } else {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 40px; color: #94a3b8;"><div style="font-size: 2rem; margin-bottom: 10px;"><i class="fas fa-users-slash"></i></div>No hay usuarios registrados.</td></tr>`; 
+            }
+            renderPaginationControls();
             return; 
         }
 
+        // --- RENDERIZADO DE FILAS ---
         paginated.forEach(u => {
             const tr = document.createElement('tr');
             tr.className = 'ux-table-row';
 
-            // Badges elegantes
             const estadoBadge = u.idEstadoUsuario === 1 
                 ? `<span style="background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; padding: 6px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;"><i class="fas fa-circle" style="font-size: 0.4rem;"></i>Activo</span>` 
                 : `<span style="background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;"><i class="fas fa-circle" style="font-size: 0.4rem;"></i>Inactivo</span>`;
 
-            // Avatar tipo "Squircle" (cuadrado redondeado)
             const avatarUrl = u.strRutaImagen || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.strNombreUsuario)}&background=e2e8f0&color=475569&bold=true&rounded=false`;
 
             tr.innerHTML = `
@@ -302,6 +359,7 @@ const UsuarioModule = (() => {
                 td.style.borderBottom = '1px solid #f1f5f9';
                 td.style.textAlign = 'right';
 
+                // Botones limpios, solo icono
                 if (permisos.bitEditar) { 
                     const b = document.createElement('button'); 
                     b.innerHTML = '<i class="fas fa-pen"></i>'; 
@@ -330,19 +388,38 @@ const UsuarioModule = (() => {
     }
 
     function renderPaginationControls() {
-        const controls = document.getElementById('pagination-controls-usr'); controls.innerHTML = '';
-        const pageCount = Math.ceil(usuariosData.length / rowsPerPage);
+        const controls = document.getElementById('pagination-controls-usr'); 
+        controls.innerHTML = '';
+        const pageCount = Math.ceil(filteredData.length / rowsPerPage);
+        
         if(pageCount <= 1) return; 
 
+        const createBtn = (text, pageNum, disabled = false, icon = null) => {
+            const btn = document.createElement('button');
+            const innerContent = icon ? `<i class="${icon}"></i>` : text;
+            btn.innerHTML = innerContent;
+            
+            if (disabled) {
+                btn.style.cssText = `background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; margin: 2px; cursor: not-allowed; opacity: 0.7;`;
+                btn.disabled = true;
+            } else {
+                const isCurrent = pageNum === currentPage && text !== 'Inicio' && text !== 'Fin';
+                btn.style.cssText = `background: ${isCurrent ? '#2563eb' : '#ffffff'}; color: ${isCurrent ? '#ffffff' : '#475569'}; border: 1px solid ${isCurrent ? '#2563eb' : '#e2e8f0'}; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s; margin: 2px;`;
+                if (!isCurrent) btn.onmouseover = () => btn.style.background = '#f1f5f9';
+                if (!isCurrent) btn.onmouseout = () => btn.style.background = '#ffffff';
+                btn.onclick = () => { currentPage = pageNum; renderTable(); };
+            }
+            return btn;
+        };
+
+        // Controles de Inicio y Fin adaptados
+        controls.appendChild(createBtn('Inicio', 1, currentPage === 1, 'fas fa-angle-double-left'));
+
         for (let i = 1; i <= pageCount; i++) {
-            const btn = document.createElement('button'); 
-            btn.textContent = i; 
-            btn.style.cssText = `background: ${i === currentPage ? '#2563eb' : '#ffffff'}; color: ${i === currentPage ? '#ffffff' : '#475569'}; border: 1px solid ${i === currentPage ? '#2563eb' : '#e2e8f0'}; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s;`;
-            if (i !== currentPage) btn.onmouseover = () => btn.style.background = '#f1f5f9';
-            if (i !== currentPage) btn.onmouseout = () => btn.style.background = '#ffffff';
-            btn.onclick = () => { currentPage = i; renderTable(); }; 
-            controls.appendChild(btn);
+            controls.appendChild(createBtn(i, i));
         }
+
+        controls.appendChild(createBtn('Fin', pageCount, currentPage === pageCount, 'fas fa-angle-double-right'));
     }
 
     function setupEventListeners() {
@@ -370,6 +447,13 @@ const UsuarioModule = (() => {
             const id = document.getElementById('usuario-id').value;
             saveUsuario(data, id);
         });
+
+        // Eventos del buscador
+        const inputBuscador = document.getElementById('buscador-usuarios');
+        if (inputBuscador) {
+            inputBuscador.addEventListener('keyup', filtrarUsuarios);
+            inputBuscador.addEventListener('search', filtrarUsuarios); 
+        }
     }
 
     return { render: renderView };
