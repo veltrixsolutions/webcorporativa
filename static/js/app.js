@@ -1,6 +1,36 @@
 // static/js/app.js
 
 document.addEventListener('DOMContentLoaded', () => {
+    // ==========================================
+    // 1. LÓGICA DEL TEMA (MODO OSCURO / CLARO)
+    // ==========================================
+    const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
+    if (toggleSwitch) {
+        const currentTheme = localStorage.getItem('veltrix_theme') || 'light';
+
+        // Aplicar el tema inicial guardado
+        if (currentTheme === 'dark') {
+            toggleSwitch.checked = true;
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+        }
+
+        // Escuchar el evento de cambio en el switch
+        toggleSwitch.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('veltrix_theme', 'dark');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+                localStorage.setItem('veltrix_theme', 'light');
+            }
+        });
+    }
+
+    // ==========================================
+    // 2. AUTENTICACIÓN Y SEGURIDAD JWT
+    // ==========================================
     const token = localStorage.getItem('jwt_token');
     if (!token) { window.location.href = '/login.html'; return; }
 
@@ -22,6 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    // ==========================================
+    // 3. UI DEL USUARIO (HEADER Y SIDEBAR)
+    // ==========================================
     const btnLogout = document.getElementById('btn-logout');
     if (btnLogout) {
         btnLogout.addEventListener('click', () => {
@@ -38,10 +71,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (userData.ruta_imagen && userData.ruta_imagen.trim() !== "") {
             avatarImg.src = userData.ruta_imagen;
         } else {
-            avatarImg.src = `https://ui-avatars.com/api/?name=${userData.nombre}&background=2563eb&color=fff`;
+            avatarImg.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.nombre)}&background=2563eb&color=fff`;
         }
     }
 
+    // ==========================================
+    // 4. CARGA DINÁMICA DEL MENÚ
+    // ==========================================
     async function loadMenu() {
         let menus = [];
         try {
@@ -75,7 +111,8 @@ document.addEventListener('DOMContentLoaded', () => {
         menuContainer.innerHTML = '';
 
         if (!menus || menus.length === 0) {
-            menuContainer.innerHTML = '<p style="padding: 20px; color: #6b7280; text-align: center; font-size: 0.9rem;">No tienes módulos asignados.</p>';
+            // Usamos variable CSS para el color del texto vacío
+            menuContainer.innerHTML = '<p style="padding: 20px; color: var(--text-secondary); text-align: center; font-size: 0.9rem;">No tienes módulos asignados.</p>';
             return;
         }
 
@@ -108,37 +145,48 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateBreadcrumbs(menuName, moduleName) {
         const breadcrumbs = document.getElementById('breadcrumbs');
         if (breadcrumbs) {
-            breadcrumbs.innerHTML = `<span class="crumb">Inicio</span><span class="separator">/</span><span>${menuName}</span><span class="separator">/</span><span class="crumb">${moduleName}</span>`;
+            breadcrumbs.innerHTML = `<span class="crumb">Inicio</span><span class="separator">/</span><span style="color: var(--text-secondary);">${menuName}</span><span class="separator">/</span><span class="crumb" style="color: var(--brand-primary);">${moduleName}</span>`;
         }
     }
 
-    // Aceptamos perfilId en los parámetros
+    // ==========================================
+    // 5. CARGA DE MÓDULOS (RUTEO INTERNO)
+    // ==========================================
     function loadModuleContent(moduleId, moduleName, perfilId) {
         const container = document.getElementById('module-content');
         if (!container) return;
         
-        container.innerHTML = `<div class="data-card-centered"><h2>Cargando módulo: ${moduleName}...</h2></div>`;
+        // Usamos variables CSS para el estado de carga
+        container.innerHTML = `
+            <div class="data-card-centered" style="display: flex; justify-content: center; align-items: center; min-height: 200px;">
+                <h2 style="color: var(--text-primary); font-weight: 600;"><i class="fas fa-spinner fa-spin" style="margin-right: 10px; color: var(--brand-primary);"></i>Cargando módulo: ${moduleName}...</h2>
+            </div>
+        `;
 
-        switch(moduleName) {
-            case 'Perfil':
-                if (typeof PerfilModule !== 'undefined') PerfilModule.render(container, moduleId, perfilId);
-                break;
-            case 'Usuario':
-                if (typeof UsuarioModule !== 'undefined') UsuarioModule.render(container, moduleId, perfilId);
-                break;
-            case 'Permisos-Perfil':
-                if (typeof PermisoModule !== 'undefined') PermisoModule.render(container, moduleId, perfilId);
-                break;
-            case 'Módulo':
-                if (typeof ModuloApp !== 'undefined') ModuloApp.render(container, moduleId, perfilId);
-                break;
-            default:
-                if (typeof ModuloEstatico !== 'undefined') {
-                    ModuloEstatico.render(container, moduleId, moduleName, perfilId);
-                }
-                break;
-        }
+        // Pequeño retardo para que la transición visual de carga se sienta fluida
+        setTimeout(() => {
+            switch(moduleName) {
+                case 'Perfil':
+                    if (typeof PerfilModule !== 'undefined') PerfilModule.render(container, moduleId, perfilId);
+                    break;
+                case 'Usuario':
+                    if (typeof UsuarioModule !== 'undefined') UsuarioModule.render(container, moduleId, perfilId);
+                    break;
+                case 'Permisos-Perfil':
+                    if (typeof PermisoModule !== 'undefined') PermisoModule.render(container, moduleId, perfilId);
+                    break;
+                case 'Módulo':
+                    if (typeof ModuloApp !== 'undefined') ModuloApp.render(container, moduleId, perfilId);
+                    break;
+                default:
+                    if (typeof ModuloEstatico !== 'undefined') {
+                        ModuloEstatico.render(container, moduleId, moduleName, perfilId);
+                    }
+                    break;
+            }
+        }, 150); // 150ms de delay para evitar parpadeos bruscos
     }
 
+    // Iniciar carga
     loadMenu();
 });

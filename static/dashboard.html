@@ -53,34 +53,6 @@
             </div>
         </main>
     </div>
-    
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
-            
-            // 1. Revisar si hay un tema guardado previamente, si no, por defecto 'light'
-            const currentTheme = localStorage.getItem('veltrix_theme') || 'light';
-            
-            // 2. Aplicar el tema inicial
-            if (currentTheme === 'dark') {
-                toggleSwitch.checked = true;
-                document.documentElement.setAttribute('data-theme', 'dark');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'light');
-            }
-
-            // 3. Evento al interactuar con el switch
-            toggleSwitch.addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                    localStorage.setItem('veltrix_theme', 'dark');
-                } else {
-                    document.documentElement.setAttribute('data-theme', 'light');
-                    localStorage.setItem('veltrix_theme', 'light');
-                }
-            });
-        });
-    </script>
 
     <script src="js/usuario.js?v=2"></script>
     <script src="js/perfil.js?v=2"></script>
