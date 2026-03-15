@@ -17,8 +17,7 @@
                 <img id="user-avatar" src="" alt="Avatar" class="avatar">
                 <span id="user-name">Cargando...</span>
             </div>
-            <nav id="dynamic-menu" class="sidebar-menu">
-            </nav>
+            <nav id="dynamic-menu" class="sidebar-menu"></nav>
         </aside>
 
         <main class="main-content">
@@ -27,13 +26,18 @@
                     <span class="crumb">Inicio</span>
                 </div>
                 
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <button id="btn-theme-toggle" style="background: transparent; border: none; color: var(--text-color, #64748b); font-size: 1.2rem; cursor: pointer; transition: color 0.2s;" title="Cambiar tema">
-                        <i class="fas fa-moon"></i>
-                    </button>
-                    
+                <div style="display: flex; align-items: center; gap: 20px;">
+                    <div class="theme-switch-wrapper">
+                        <i class="fas fa-sun sun-icon"></i>
+                        <label class="theme-switch" for="checkbox">
+                            <input type="checkbox" id="checkbox" />
+                            <div class="slider round"></div>
+                        </label>
+                        <i class="fas fa-moon moon-icon"></i>
+                    </div>
+
                     <button id="btn-logout" class="btn-logout">
-                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                        <i class="fas fa-sign-out-alt"></i> <span>Cerrar Sesión</span>
                     </button>
                 </div>
             </header>
@@ -51,34 +55,27 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const themeToggleBtn = document.getElementById('btn-theme-toggle');
-            const themeIcon = themeToggleBtn.querySelector('i');
-            
-            // 1. Revisar si hay un tema guardado previamente, si no, por defecto 'light'
+            const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
             const currentTheme = localStorage.getItem('veltrix_theme') || 'light';
-            
-            // 2. Aplicar el tema al HTML principal
-            document.documentElement.setAttribute('data-theme', currentTheme);
-            actualizarIcono(currentTheme);
 
-            // 3. Evento al hacer clic en el botón
-            themeToggleBtn.addEventListener('click', () => {
-                let theme = document.documentElement.getAttribute('data-theme');
-                let newTheme = theme === 'dark' ? 'light' : 'dark';
-                
-                document.documentElement.setAttribute('data-theme', newTheme);
-                localStorage.setItem('veltrix_theme', newTheme); // Guardar preferencia
-                actualizarIcono(newTheme);
-            });
-
-            // Cambiar icono sol/luna
-            function actualizarIcono(theme) {
-                if (theme === 'dark') {
-                    themeIcon.classList.replace('fa-moon', 'fa-sun');
-                } else {
-                    themeIcon.classList.replace('fa-sun', 'fa-moon');
-                }
+            // Aplicar tema inicial
+            if (currentTheme === 'dark') {
+                toggleSwitch.checked = true;
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
             }
+
+            // Escuchar cambios en el switch
+            toggleSwitch.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('veltrix_theme', 'dark');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    localStorage.setItem('veltrix_theme', 'light');
+                }
+            });
         });
     </script>
 
