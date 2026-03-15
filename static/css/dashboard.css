@@ -501,3 +501,56 @@ tr:hover td {
 }
 
 .alert.hidden { display: none; }
+
+/* ==========================================
+   DISEÑO DEL SWITCH DE TEMA
+========================================== */
+.theme-switch-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.theme-switch {
+    display: inline-block;
+    height: 24px;
+    position: relative;
+    width: 48px;
+}
+
+.theme-switch input { display: none; }
+
+.slider {
+    background-color: #cbd5e1;
+    bottom: 0;
+    cursor: pointer;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    background-color: white;
+    bottom: 4px;
+    content: "";
+    height: 16px;
+    left: 4px;
+    position: absolute;
+    transition: .4s;
+    width: 16px;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+input:checked + .slider { background-color: var(--brand-primary); }
+input:checked + .slider:before { transform: translateX(24px); }
+
+.sun-icon { color: #f59e0b; font-size: 0.95rem; transition: color 0.3s; }
+.moon-icon { color: #94a3b8; font-size: 0.95rem; transition: color 0.3s; }
+
+/* Cambia los colores de los iconos según el tema activo */
+[data-theme="dark"] .moon-icon { color: #facc15; } /* Luna amarilla */
+[data-theme="dark"] .sun-icon { color: #475569; }  /* Sol apagado */
