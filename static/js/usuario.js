@@ -1,10 +1,13 @@
 const UsuarioModule = (() => {
     let usuariosData = [];
-    let filteredData = []; // Arreglo para manejar las búsquedas
+    let filteredData = []; 
     let perfilesDisponibles = [];
     let currentPage = 1;
     const rowsPerPage = 5;
     let permisos = { bitAgregar: false, bitEditar: false, bitConsulta: false, bitEliminar: false, bitDetalle: false };
+    
+    // Variable para guardar el ID a eliminar temporalmente
+    let usuarioAEliminar = null;
 
     async function renderView(container, moduleId, perfilId) {
         await cargarPermisosSeguridad(moduleId, perfilId);
@@ -29,15 +32,26 @@ const UsuarioModule = (() => {
                </button>` 
             : '';
 
-        // Renderizado Principal con Inyección de Estilos
         container.innerHTML = `
             <style>
-                .ux-modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 1000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
+                .ux-modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 1000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s ease; padding: 15px;}
                 .ux-modal-overlay.active { opacity: 1; visibility: visible; }
-                .ux-modal-card { background: #ffffff; border-radius: 16px; width: 100%; max-width: 650px; transform: translateY(30px) scale(0.95); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); overflow: hidden; }
+                .ux-modal-card { background: #ffffff; border-radius: 16px; width: 100%; max-width: 650px; transform: translateY(30px) scale(0.95); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
                 .ux-modal-overlay.active .ux-modal-card { transform: translateY(0) scale(1); }
                 
-                .ux-toast { position: fixed; bottom: 30px; right: 30px; background: #ffffff; border-radius: 10px; padding: 16px 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; z-index: 1100; transform: translateX(150%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-left: 4px solid #3b82f6; }
+                /* Estilos para Modal de Confirmación */
+                .ux-confirm-card { max-width: 400px; text-align: center; padding: 30px 24px; border-radius: 20px; }
+                .ux-confirm-icon { width: 70px; height: 70px; background: #fef2f2; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 20px; color: #ef4444; font-size: 2rem; }
+                .ux-confirm-title { font-size: 1.4rem; color: #0f172a; font-weight: 700; margin-bottom: 10px; }
+                .ux-confirm-text { color: #64748b; font-size: 0.95rem; line-height: 1.5; margin-bottom: 25px; }
+                .ux-confirm-actions { display: flex; gap: 12px; justify-content: center; }
+                .ux-confirm-btn { flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; font-size: 0.95rem; }
+                .ux-confirm-cancel { background: #f1f5f9; color: #475569; }
+                .ux-confirm-cancel:hover { background: #e2e8f0; }
+                .ux-confirm-delete { background: #ef4444; color: white; box-shadow: 0 4px 6px rgba(239,68,68,0.2); }
+                .ux-confirm-delete:hover { background: #dc2626; }
+
+                .ux-toast { position: fixed; bottom: 30px; right: 30px; background: #ffffff; border-radius: 10px; padding: 16px 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; z-index: 1100; transform: translateX(150%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-left: 4px solid #3b82f6; max-width: calc(100vw - 60px); }
                 .ux-toast.show { transform: translateX(0); }
                 .ux-toast.success { border-left-color: #10b981; }
                 .ux-toast.error { border-left-color: #ef4444; }
@@ -56,7 +70,7 @@ const UsuarioModule = (() => {
             </style>
 
             <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
-                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; gap: 15px;">
+                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; gap: 15px;">
                     <div>
                         <h1 style="margin: 0; color: #0f172a; font-size: 1.75rem; font-weight: 700;">
                             <i class="fas fa-users" style="color: #64748b; margin-right: 10px;"></i>Directorio de Usuarios
@@ -94,8 +108,8 @@ const UsuarioModule = (() => {
 
             <div id="modal-usuario" class="ux-modal-overlay">
                 <div class="ux-modal-card">
-                    <form id="form-usuario">
-                        <div style="padding: 24px 30px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #fdfdfd;">
+                    <form id="form-usuario" style="display: flex; flex-direction: column; height: 100%;">
+                        <div style="padding: 24px 30px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #fdfdfd; flex-shrink: 0;">
                             <h2 id="form-titulo" style="margin: 0; font-size: 1.25rem; color: #0f172a; font-weight: 700; display: flex; align-items: center; gap: 10px;">
                                 <div style="background: #eff6ff; color: #3b82f6; width: 32px; height: 32px; border-radius: 8px; display: flex; justify-content: center; align-items: center;"><i class="fas fa-user"></i></div>
                                 <span>Registrar Usuario</span>
@@ -103,7 +117,7 @@ const UsuarioModule = (() => {
                             <button type="button" id="btn-close-modal" style="background: transparent; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer; transition: color 0.2s;"><i class="fas fa-times"></i></button>
                         </div>
                         
-                        <div style="padding: 30px; max-height: 70vh; overflow-y: auto;">
+                        <div style="padding: 30px; overflow-y: auto; flex-grow: 1;">
                             <input type="hidden" id="usuario-id" value="">
                             
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -142,13 +156,27 @@ const UsuarioModule = (() => {
                             </div>
                         </div>
 
-                        <div style="padding: 20px 30px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 12px;">
+                        <div style="padding: 20px 30px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 12px; flex-shrink: 0; flex-wrap: wrap;">
                             <button type="button" id="btn-cancel-modal" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Cancelar</button>
                             <button type="submit" id="btn-save-usr" style="background: #10b981; border: none; color: white; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px rgba(16,185,129,0.2);">
                                 <i class="fas fa-check"></i> <span>Guardar Usuario</span>
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <div id="modal-confirm-delete" class="ux-modal-overlay">
+                <div class="ux-modal-card ux-confirm-card">
+                    <div class="ux-confirm-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3 class="ux-confirm-title">¿Eliminar Usuario?</h3>
+                    <p class="ux-confirm-text">Esta acción revocará todos sus accesos. ¿Estás seguro de que deseas eliminar permanentemente a este usuario?</p>
+                    <div class="ux-confirm-actions">
+                        <button type="button" id="btn-cancel-delete" class="ux-confirm-btn ux-confirm-cancel">Cancelar</button>
+                        <button type="button" id="btn-confirm-delete" class="ux-confirm-btn ux-confirm-delete">Sí, eliminar</button>
+                    </div>
                 </div>
             </div>
 
@@ -212,6 +240,17 @@ const UsuarioModule = (() => {
         document.getElementById('modal-usuario').classList.remove('active');
     }
 
+    // Modal Confirmación Eliminación
+    function openConfirmDeleteModal(id) {
+        usuarioAEliminar = id; 
+        document.getElementById('modal-confirm-delete').classList.add('active');
+    }
+
+    function closeConfirmDeleteModal() {
+        usuarioAEliminar = null; 
+        document.getElementById('modal-confirm-delete').classList.remove('active');
+    }
+
     async function cargarPerfilesEnSelect() {
         try {
             const res = await fetch('/api/v1/perfiles', { headers: { 'Authorization': `Bearer ${getToken()}` } });
@@ -236,14 +275,12 @@ const UsuarioModule = (() => {
         } catch (e) { console.error("Error obteniendo usuarios"); }
     }
 
-    // --- LÓGICA DE BÚSQUEDA MULTI-CAMPO ---
     function filtrarUsuarios() {
         const searchTerm = document.getElementById('buscador-usuarios').value.toLowerCase().trim();
         
         if (searchTerm === '') {
             filteredData = [...usuariosData]; 
         } else {
-            // Permite buscar por nombre o correo
             filteredData = usuariosData.filter(u => 
                 u.strNombreUsuario.toLowerCase().includes(searchTerm) || 
                 u.strCorreo.toLowerCase().includes(searchTerm)
@@ -273,7 +310,7 @@ const UsuarioModule = (() => {
             if (res.ok) { 
                 closeModal();
                 showToast('¡Guardado!', 'Usuario procesado correctamente.', 'success'); 
-                document.getElementById('buscador-usuarios').value = ''; // Limpiar búsqueda para ver el cambio
+                document.getElementById('buscador-usuarios').value = ''; 
                 fetchUsuarios(); 
             } else {
                 const errData = await res.json();
@@ -285,15 +322,32 @@ const UsuarioModule = (() => {
         btnSave.disabled = false;
     }
 
-    async function deleteUsuario(id) {
-        if (!confirm('¿Eliminar permanentemente a este usuario? Esta acción revocará todos sus accesos.')) return;
+    // Lógica modificada: Ahora ejecuta el delete real
+    async function executeDeleteUsuario() {
+        if (!usuarioAEliminar) return;
+
+        const btnConfirm = document.getElementById('btn-confirm-delete');
+        const originalContent = btnConfirm.innerHTML;
+        btnConfirm.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        btnConfirm.disabled = true;
+
         try { 
-            const res = await fetch(`/api/v1/usuarios/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } }); 
+            const res = await fetch(`/api/v1/usuarios/${usuarioAEliminar}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } }); 
             if (res.ok) { 
+                closeConfirmDeleteModal();
                 showToast('Eliminado', 'Usuario removido del sistema.', 'success'); 
                 fetchUsuarios(); 
-            } 
-        } catch (e) { showToast("Error", "No se pudo eliminar el usuario.", "error"); }
+            } else {
+                closeConfirmDeleteModal();
+                showToast('Error', 'No se pudo eliminar el usuario.', 'error'); 
+            }
+        } catch (e) { 
+            closeConfirmDeleteModal();
+            showToast("Error", "Fallo de conexión al servidor.", "error"); 
+        }
+
+        btnConfirm.innerHTML = originalContent;
+        btnConfirm.disabled = false;
     }
 
     function renderTable() {
@@ -303,7 +357,6 @@ const UsuarioModule = (() => {
         const start = (currentPage - 1) * rowsPerPage; 
         const paginated = filteredData.slice(start, start + rowsPerPage);
         
-        // --- MANEJO DE ESTADOS VACÍOS ---
         if (filteredData.length === 0) { 
             const searchTerm = document.getElementById('buscador-usuarios').value;
             if (searchTerm) {
@@ -331,7 +384,6 @@ const UsuarioModule = (() => {
             return; 
         }
 
-        // --- RENDERIZADO DE FILAS ---
         paginated.forEach(u => {
             const tr = document.createElement('tr');
             tr.className = 'ux-table-row';
@@ -363,7 +415,6 @@ const UsuarioModule = (() => {
                 td.style.borderBottom = '1px solid #f1f5f9';
                 td.style.textAlign = 'right';
 
-                // Botones limpios, solo icono
                 if (permisos.bitEditar) { 
                     const b = document.createElement('button'); 
                     b.innerHTML = '<i class="fas fa-pen"></i>'; 
@@ -381,7 +432,8 @@ const UsuarioModule = (() => {
                     b.onmouseover = () => b.style.transform = 'scale(1.2)';
                     b.onmouseout = () => b.style.transform = 'scale(1)';
                     b.title = "Eliminar Usuario";
-                    b.onclick = () => deleteUsuario(u.id); 
+                    // Llama al nuevo modal de confirmación
+                    b.onclick = () => openConfirmDeleteModal(u.id); 
                     td.appendChild(b); 
                 }
                 tr.appendChild(td);
@@ -416,7 +468,6 @@ const UsuarioModule = (() => {
             return btn;
         };
 
-        // Controles de Inicio y Fin adaptados
         controls.appendChild(createBtn('Inicio', 1, currentPage === 1, 'fas fa-angle-double-left'));
 
         for (let i = 1; i <= pageCount; i++) {
@@ -430,6 +481,7 @@ const UsuarioModule = (() => {
         const btn = document.getElementById('btn-nuevo-usuario');
         if (btn) btn.addEventListener('click', () => openModal(false));
         
+        // Modal de Registro
         document.getElementById('btn-close-modal').addEventListener('click', closeModal);
         document.getElementById('btn-cancel-modal').addEventListener('click', closeModal);
         
@@ -452,7 +504,15 @@ const UsuarioModule = (() => {
             saveUsuario(data, id);
         });
 
-        // Eventos del buscador
+        // Modal de Confirmación de Eliminación
+        document.getElementById('btn-cancel-delete').addEventListener('click', closeConfirmDeleteModal);
+        document.getElementById('btn-confirm-delete').addEventListener('click', executeDeleteUsuario);
+
+        document.getElementById('modal-confirm-delete').addEventListener('click', (e) => {
+            if(e.target.id === 'modal-confirm-delete') closeConfirmDeleteModal();
+        });
+
+        // Buscador
         const inputBuscador = document.getElementById('buscador-usuarios');
         if (inputBuscador) {
             inputBuscador.addEventListener('keyup', filtrarUsuarios);

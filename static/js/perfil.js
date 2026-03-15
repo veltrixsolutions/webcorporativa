@@ -4,6 +4,9 @@ const PerfilModule = (() => {
     let currentPage = 1;
     const rowsPerPage = 5;
     let permisos = { bitAgregar: false, bitEditar: false, bitConsulta: false, bitEliminar: false, bitDetalle: false };
+    
+    // Variable para guardar el ID a eliminar temporalmente
+    let perfilAEliminar = null;
 
     async function renderView(container, moduleId, perfilId) {
         await cargarPermisosSeguridad(moduleId, perfilId);
@@ -28,7 +31,6 @@ const PerfilModule = (() => {
                </button>` 
             : '';
 
-        // Renderizado Principal con Inyección de Estilos UI Modernos y Responsivos
         container.innerHTML = `
             <style>
                 .ux-modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 1000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s ease; padding: 15px; }
@@ -36,6 +38,18 @@ const PerfilModule = (() => {
                 .ux-modal-card { background: #ffffff; border-radius: 16px; width: 100%; max-width: 600px; transform: translateY(30px) scale(0.95); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); overflow: hidden; max-height: 90vh; display: flex; flex-direction: column; }
                 .ux-modal-overlay.active .ux-modal-card { transform: translateY(0) scale(1); }
                 
+                /* Estilos para Modal de Confirmación */
+                .ux-confirm-card { max-width: 400px; text-align: center; padding: 30px 24px; border-radius: 20px; }
+                .ux-confirm-icon { width: 70px; height: 70px; background: #fef2f2; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 20px; color: #ef4444; font-size: 2rem; }
+                .ux-confirm-title { font-size: 1.4rem; color: #0f172a; font-weight: 700; margin-bottom: 10px; }
+                .ux-confirm-text { color: #64748b; font-size: 0.95rem; line-height: 1.5; margin-bottom: 25px; }
+                .ux-confirm-actions { display: flex; gap: 12px; justify-content: center; }
+                .ux-confirm-btn { flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; font-size: 0.95rem; }
+                .ux-confirm-cancel { background: #f1f5f9; color: #475569; }
+                .ux-confirm-cancel:hover { background: #e2e8f0; }
+                .ux-confirm-delete { background: #ef4444; color: white; box-shadow: 0 4px 6px rgba(239,68,68,0.2); }
+                .ux-confirm-delete:hover { background: #dc2626; }
+
                 .ux-toast { position: fixed; bottom: 30px; right: 30px; background: #ffffff; border-radius: 10px; padding: 16px 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; z-index: 1100; transform: translateX(150%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-left: 4px solid #3b82f6; max-width: calc(100vw - 60px); }
                 .ux-toast.show { transform: translateX(0); }
                 .ux-toast.success { border-left-color: #10b981; }
@@ -132,6 +146,20 @@ const PerfilModule = (() => {
                 </div>
             </div>
 
+            <div id="modal-confirm-delete" class="ux-modal-overlay">
+                <div class="ux-modal-card ux-confirm-card">
+                    <div class="ux-confirm-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3 class="ux-confirm-title">¿Eliminar Perfil?</h3>
+                    <p class="ux-confirm-text">Se afectarán los usuarios y permisos vinculados a él. Esta acción es irreversible.</p>
+                    <div class="ux-confirm-actions">
+                        <button type="button" id="btn-cancel-delete" class="ux-confirm-btn ux-confirm-cancel">Cancelar</button>
+                        <button type="button" id="btn-confirm-delete" class="ux-confirm-btn ux-confirm-delete">Sí, eliminar</button>
+                    </div>
+                </div>
+            </div>
+
             <div id="ux-toast" class="ux-toast">
                 <div id="toast-icon" style="font-size: 1.2rem;"></div>
                 <div style="display: flex; flex-direction: column;">
@@ -197,6 +225,17 @@ const PerfilModule = (() => {
         document.getElementById('modal-perfil').classList.remove('active');
     }
 
+    // Modal Confirmación Eliminación
+    function openConfirmDeleteModal(id) {
+        perfilAEliminar = id;
+        document.getElementById('modal-confirm-delete').classList.add('active');
+    }
+
+    function closeConfirmDeleteModal() {
+        perfilAEliminar = null;
+        document.getElementById('modal-confirm-delete').classList.remove('active');
+    }
+
     async function fetchPerfiles() {
         try { 
             const res = await fetch('/api/v1/perfiles', { headers: { 'Authorization': `Bearer ${getToken()}` } }); 
@@ -246,17 +285,32 @@ const PerfilModule = (() => {
         btnSave.disabled = false;
     }
 
-    async function deletePerfil(id) {
-        if (!confirm('¿Estás seguro de eliminar este perfil? Se afectarán los usuarios y permisos vinculados a él.')) return;
+    // Lógica modificada: Ahora ejecuta el delete real
+    async function executeDeletePerfil() {
+        if (!perfilAEliminar) return;
+
+        const btnConfirm = document.getElementById('btn-confirm-delete');
+        const originalContent = btnConfirm.innerHTML;
+        btnConfirm.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        btnConfirm.disabled = true;
+
         try { 
-            const res = await fetch(`/api/v1/perfiles/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } }); 
+            const res = await fetch(`/api/v1/perfiles/${perfilAEliminar}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } }); 
             if (res.ok) { 
+                closeConfirmDeleteModal();
                 showToast('Eliminado', 'El perfil ha sido removido del sistema.', 'success'); 
                 fetchPerfiles(); 
             } else { 
+                closeConfirmDeleteModal();
                 showToast('Acción denegada', 'No se puede eliminar un perfil que está en uso.', 'error'); 
             }
-        } catch (e) { showToast('Error', 'Fallo de conexión al servidor.', 'error'); }
+        } catch (e) { 
+            closeConfirmDeleteModal();
+            showToast('Error', 'Fallo de conexión al servidor.', 'error'); 
+        }
+
+        btnConfirm.innerHTML = originalContent;
+        btnConfirm.disabled = false;
     }
 
     function renderTable() {
@@ -341,7 +395,8 @@ const PerfilModule = (() => {
                     b.onmouseover = () => b.style.transform = 'scale(1.2)';
                     b.onmouseout = () => b.style.transform = 'scale(1)';
                     b.title = "Eliminar Perfil";
-                    b.onclick = () => deletePerfil(p.id); 
+                    // Ahora llama al modal de confirmación en lugar del confirm nativo
+                    b.onclick = () => openConfirmDeleteModal(p.id); 
                     td.appendChild(b); 
                 }
                 tr.appendChild(td);
@@ -405,6 +460,14 @@ const PerfilModule = (() => {
                 strNombrePerfil: document.getElementById('nombre-perfil').value.trim(), 
                 bitAdministrador: document.getElementById('es-admin').value === 'true' 
             }, document.getElementById('perfil-id').value); 
+        });
+
+        // Modal de Confirmación de Eliminación
+        document.getElementById('btn-cancel-delete').addEventListener('click', closeConfirmDeleteModal);
+        document.getElementById('btn-confirm-delete').addEventListener('click', executeDeletePerfil);
+
+        document.getElementById('modal-confirm-delete').addEventListener('click', (e) => {
+            if(e.target.id === 'modal-confirm-delete') closeConfirmDeleteModal();
         });
 
         // Eventos del buscador

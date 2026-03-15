@@ -4,6 +4,9 @@ const ModuloApp = (() => {
     let currentPage = 1;
     const rowsPerPage = 5;
     let permisos = { bitAgregar: false, bitEditar: false, bitConsulta: false, bitEliminar: false, bitDetalle: false };
+    
+    // Variable para guardar el ID a eliminar temporalmente
+    let moduloAEliminar = null;
 
     async function renderView(container, moduleId, perfilId) {
         await cargarPermisosSeguridad(moduleId, perfilId);
@@ -35,6 +38,18 @@ const ModuloApp = (() => {
                 .ux-modal-card { background: #ffffff; border-radius: 16px; width: 100%; max-width: 480px; transform: translateY(30px) scale(0.95); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
                 .ux-modal-overlay.active .ux-modal-card { transform: translateY(0) scale(1); }
                 
+                /* Estilos para Modal de Confirmación */
+                .ux-confirm-card { max-width: 400px; text-align: center; padding: 30px 24px; border-radius: 20px; }
+                .ux-confirm-icon { width: 70px; height: 70px; background: #fef2f2; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 20px; color: #ef4444; font-size: 2rem; }
+                .ux-confirm-title { font-size: 1.4rem; color: #0f172a; font-weight: 700; margin-bottom: 10px; }
+                .ux-confirm-text { color: #64748b; font-size: 0.95rem; line-height: 1.5; margin-bottom: 25px; }
+                .ux-confirm-actions { display: flex; gap: 12px; justify-content: center; }
+                .ux-confirm-btn { flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; font-size: 0.95rem; }
+                .ux-confirm-cancel { background: #f1f5f9; color: #475569; }
+                .ux-confirm-cancel:hover { background: #e2e8f0; }
+                .ux-confirm-delete { background: #ef4444; color: white; box-shadow: 0 4px 6px rgba(239,68,68,0.2); }
+                .ux-confirm-delete:hover { background: #dc2626; }
+
                 .ux-toast { position: fixed; bottom: 30px; right: 30px; background: #ffffff; border-radius: 10px; padding: 16px 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; z-index: 1100; transform: translateX(150%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-left: 4px solid #3b82f6; max-width: calc(100vw - 60px); }
                 .ux-toast.show { transform: translateX(0); }
                 .ux-toast.success { border-left-color: #10b981; }
@@ -46,7 +61,6 @@ const ModuloApp = (() => {
                 .ux-input { width: 100%; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; color: #0f172a; transition: all 0.2s; background: #f8fafc; }
                 .ux-input:focus { outline: none; border-color: #3b82f6; background: #ffffff; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
                 
-                /* Buscador Ajustado */
                 .search-container { position: relative; width: 100%; max-width: 500px; margin-bottom: 25px; }
                 .search-container i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem; }
                 .search-input { width: 100%; padding: 14px 16px 14px 45px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; background: #ffffff; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
@@ -114,6 +128,20 @@ const ModuloApp = (() => {
                 </div>
             </div>
 
+            <div id="modal-confirm-delete" class="ux-modal-overlay">
+                <div class="ux-modal-card ux-confirm-card">
+                    <div class="ux-confirm-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3 class="ux-confirm-title">¿Eliminar Módulo?</h3>
+                    <p class="ux-confirm-text">Esta acción es irreversible. ¿Estás seguro de que deseas eliminar permanentemente este módulo del sistema?</p>
+                    <div class="ux-confirm-actions">
+                        <button type="button" id="btn-cancel-delete" class="ux-confirm-btn ux-confirm-cancel">Cancelar</button>
+                        <button type="button" id="btn-confirm-delete" class="ux-confirm-btn ux-confirm-delete">Sí, eliminar</button>
+                    </div>
+                </div>
+            </div>
+
             <div id="ux-toast" class="ux-toast">
                 <div id="toast-icon" style="font-size: 1.2rem;"></div>
                 <div style="display: flex; flex-direction: column;">
@@ -156,6 +184,7 @@ const ModuloApp = (() => {
         setTimeout(() => { toast.classList.remove('show'); }, 4000);
     }
 
+    // Modal Formulario
     function openModal(isEdit = false, m = null) {
         document.getElementById('form-modulo').reset();
         document.getElementById('modulo-id').value = '';
@@ -174,6 +203,17 @@ const ModuloApp = (() => {
 
     function closeModal() {
         document.getElementById('modal-modulo').classList.remove('active');
+    }
+
+    // Modal Confirmación Eliminación
+    function openConfirmDeleteModal(id) {
+        moduloAEliminar = id; // Guardamos el ID temporalmente
+        document.getElementById('modal-confirm-delete').classList.add('active');
+    }
+
+    function closeConfirmDeleteModal() {
+        moduloAEliminar = null; // Limpiamos el ID
+        document.getElementById('modal-confirm-delete').classList.remove('active');
     }
 
     async function fetchModulos() {
@@ -224,17 +264,32 @@ const ModuloApp = (() => {
         btnSave.disabled = false;
     }
 
-    async function deleteModulo(id) {
-        if (!confirm('¿Estás seguro de que deseas eliminar este módulo permanentemente?')) return;
+    // Lógica modificada: Ahora ejecuta el delete real
+    async function executeDeleteModulo() {
+        if (!moduloAEliminar) return;
+
+        const btnConfirm = document.getElementById('btn-confirm-delete');
+        const originalContent = btnConfirm.innerHTML;
+        btnConfirm.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        btnConfirm.disabled = true;
+
         try {
-            const res = await fetch(`/api/v1/modulos/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } });
+            const res = await fetch(`/api/v1/modulos/${moduloAEliminar}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } });
             if (res.ok) { 
+                closeConfirmDeleteModal();
                 showToast('Eliminado', 'El módulo ha sido borrado.', 'success'); 
                 fetchModulos(); 
             } else {
+                closeConfirmDeleteModal();
                 showToast('Acción denegada', 'El módulo está en uso o protegido.', 'error');
             }
-        } catch (error) { showToast('Error', 'Fallo de conexión al servidor.', 'error'); }
+        } catch (error) { 
+            closeConfirmDeleteModal();
+            showToast('Error', 'Fallo de conexión al servidor.', 'error'); 
+        }
+
+        btnConfirm.innerHTML = originalContent;
+        btnConfirm.disabled = false;
     }
 
     function renderTable() {
@@ -295,7 +350,6 @@ const ModuloApp = (() => {
                 if (permisos.bitEditar) {
                     const btn = document.createElement('button'); 
                     btn.innerHTML = '<i class="fas fa-pen"></i>'; 
-                    // Estilo revertido a solo el ícono sin fondo
                     btn.style.cssText = 'background: transparent; border: none; color: #3b82f6; font-size: 1.1rem; padding: 8px; cursor: pointer; transition: transform 0.2s;';
                     btn.onmouseover = () => btn.style.transform = 'scale(1.2)';
                     btn.onmouseout = () => btn.style.transform = 'scale(1)';
@@ -306,12 +360,12 @@ const ModuloApp = (() => {
                 if (permisos.bitEliminar) {
                     const btn = document.createElement('button'); 
                     btn.innerHTML = '<i class="fas fa-trash-alt"></i>'; 
-                    // Estilo revertido a solo el ícono sin fondo, con margen izquierdo
                     btn.style.cssText = 'background: transparent; border: none; color: #ef4444; font-size: 1.1rem; padding: 8px; cursor: pointer; margin-left: 10px; transition: transform 0.2s;';
                     btn.onmouseover = () => btn.style.transform = 'scale(1.2)';
                     btn.onmouseout = () => btn.style.transform = 'scale(1)';
                     btn.title = 'Eliminar Módulo';
-                    btn.onclick = () => deleteModulo(m.id); 
+                    // Ahora llama al modal de confirmación en lugar del confirm nativo
+                    btn.onclick = () => openConfirmDeleteModal(m.id); 
                     accTd.appendChild(btn);
                 }
                 tr.appendChild(accTd);
@@ -359,6 +413,7 @@ const ModuloApp = (() => {
         const btnNuevo = document.getElementById('btn-nuevo-mod');
         if (btnNuevo) btnNuevo.addEventListener('click', () => openModal(false));
         
+        // Modal de Formulario
         document.getElementById('btn-close-modal').addEventListener('click', closeModal);
         document.getElementById('btn-cancel-modal').addEventListener('click', closeModal);
         
@@ -371,6 +426,15 @@ const ModuloApp = (() => {
             saveModulo({ strNombreModulo: document.getElementById('nombre-modulo').value.trim() }, document.getElementById('modulo-id').value); 
         });
 
+        // Modal de Confirmación de Eliminación
+        document.getElementById('btn-cancel-delete').addEventListener('click', closeConfirmDeleteModal);
+        document.getElementById('btn-confirm-delete').addEventListener('click', executeDeleteModulo);
+
+        document.getElementById('modal-confirm-delete').addEventListener('click', (e) => {
+            if(e.target.id === 'modal-confirm-delete') closeConfirmDeleteModal();
+        });
+
+        // Buscador
         const inputBuscador = document.getElementById('buscador-modulos');
         if (inputBuscador) {
             inputBuscador.addEventListener('keyup', filtrarModulos);
