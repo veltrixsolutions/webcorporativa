@@ -1,6 +1,6 @@
-// static/js/modulo.js
 const ModuloApp = (() => {
     let modulosData = [];
+    let filteredData = []; // Nuevo: Arreglo para manejar las búsquedas
     let currentPage = 1;
     const rowsPerPage = 5;
     let permisos = { bitAgregar: false, bitEditar: false, bitConsulta: false, bitEliminar: false, bitDetalle: false };
@@ -28,7 +28,7 @@ const ModuloApp = (() => {
                </button>` 
             : '';
 
-        // Renderizado Principal con Inyección de Estilos Responsivos
+        // Renderizado Principal con Buscador Integrado
         container.innerHTML = `
             <style>
                 /* Estilos embebidos para UX avanzada (Modales y Toasts) */
@@ -47,10 +47,16 @@ const ModuloApp = (() => {
                 
                 .ux-input { width: 100%; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; color: #0f172a; transition: all 0.2s; background: #f8fafc; }
                 .ux-input:focus { outline: none; border-color: #3b82f6; background: #ffffff; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+                
+                /* Buscador Estilos */
+                .search-container { position: relative; width: 100%; max-width: 400px; margin-bottom: 20px; }
+                .search-container i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+                .search-input { width: 100%; padding: 12px 16px 12px 40px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; background: #ffffff; transition: all 0.2s; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+                .search-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
             </style>
 
             <div style="max-width: 1100px; margin: 0 auto; padding: 20px;">
-                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; gap: 15px;">
+                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; padding-bottom: 15px; gap: 15px;">
                     <div>
                         <h1 style="color: #0f172a; font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 5px;">
                             <i class="fas fa-cubes" style="color: #64748b; margin-right: 10px;"></i>Módulos
@@ -58,6 +64,16 @@ const ModuloApp = (() => {
                         <p style="color: #64748b; font-size: 1rem; margin: 0;">Administra los componentes estructurales del sistema.</p>
                     </div>
                     <div>${btnNuevoHTML}</div>
+                </div>
+
+                <div style="background: #ffffff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+                    <div class="search-container" style="margin-bottom: 0;">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="buscador-modulos" class="search-input" placeholder="Buscar módulos por nombre..." autocomplete="off">
+                    </div>
+                    <div style="font-size: 0.85rem; color: #64748b; font-weight: 600;">
+                        Total: <span id="contador-modulos">0</span>
+                    </div>
                 </div>
 
                 <div style="background: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: hidden;">
@@ -72,7 +88,7 @@ const ModuloApp = (() => {
                             <tbody id="tabla-modulos-body"></tbody>
                         </table>
                     </div>
-                    <div id="pagination-controls-mod" style="padding: 15px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: center; gap: 8px; background: #fdfdfd; flex-wrap: wrap;"></div>
+                    <div id="pagination-controls-mod" style="padding: 15px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: center; align-items: center; gap: 8px; background: #fdfdfd; flex-wrap: wrap;"></div>
                 </div>
             </div>
 
@@ -131,7 +147,6 @@ const ModuloApp = (() => {
         } catch (e) { console.error("Error de permisos"); }
     }
 
-    // Nuevo Sistema de Notificaciones Flotantes (UX)
     function showToast(title, msg, type = 'success') {
         const toast = document.getElementById('ux-toast');
         document.getElementById('toast-title').innerText = title;
@@ -148,7 +163,6 @@ const ModuloApp = (() => {
         setTimeout(() => { toast.classList.remove('show'); }, 4000);
     }
 
-    // Lógica del Modal
     function openModal(isEdit = false, m = null) {
         document.getElementById('form-modulo').reset();
         document.getElementById('modulo-id').value = '';
@@ -172,12 +186,29 @@ const ModuloApp = (() => {
     async function fetchModulos() {
         try {
             const res = await fetch('/api/v1/modulos', { headers: { 'Authorization': `Bearer ${getToken()}` } });
-            if (res.ok) { modulosData = await res.json() || []; currentPage = 1; renderTable(); }
+            if (res.ok) { 
+                modulosData = await res.json() || []; 
+                filtrarModulos(); // Inicializa el filtrado (que mostrará todos por defecto)
+            }
         } catch (error) { console.error(error); }
     }
 
+    // --- LÓGICA DE BÚSQUEDA ---
+    function filtrarModulos() {
+        const searchTerm = document.getElementById('buscador-modulos').value.toLowerCase().trim();
+        
+        if (searchTerm === '') {
+            filteredData = [...modulosData]; // Si no hay búsqueda, mostramos todos
+        } else {
+            filteredData = modulosData.filter(m => m.strNombreModulo.toLowerCase().includes(searchTerm));
+        }
+
+        document.getElementById('contador-modulos').innerText = filteredData.length;
+        currentPage = 1; // Reseteamos la página al buscar
+        renderTable();
+    }
+
     async function saveModulo(data, id) {
-        // Feedback visual de carga en el botón
         const btnSave = document.getElementById('btn-save-mod');
         const originalContent = btnSave.innerHTML;
         btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Procesando...</span>';
@@ -191,6 +222,8 @@ const ModuloApp = (() => {
             if (res.ok) { 
                 closeModal();
                 showToast('¡Éxito!', id ? 'Módulo actualizado correctamente.' : 'Módulo creado exitosamente.', 'success'); 
+                // Limpiamos el buscador después de guardar para ver el nuevo registro
+                document.getElementById('buscador-modulos').value = '';
                 fetchModulos(); 
             } else {
                 showToast('Error', 'No se pudo guardar la información.', 'error');
@@ -217,11 +250,38 @@ const ModuloApp = (() => {
     function renderTable() {
         const tbody = document.getElementById('tabla-modulos-body');
         tbody.innerHTML = '';
+        
+        // Paginación sobre el arreglo FILTRADO
         const start = (currentPage - 1) * rowsPerPage;
-        const paginated = modulosData.slice(start, start + rowsPerPage);
+        const paginated = filteredData.slice(start, start + rowsPerPage);
 
-        if (paginated.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; padding: 40px; color: #94a3b8;"><div style="font-size: 2rem; margin-bottom: 10px;"><i class="fas fa-folder-open"></i></div>No hay registros disponibles.</td></tr>'; 
+        // Mensaje Amigable si no hay resultados en la búsqueda
+        if (filteredData.length === 0) {
+            const searchTerm = document.getElementById('buscador-modulos').value;
+            if (searchTerm) {
+                tbody.innerHTML = `
+                    <tr><td colspan="2" style="text-align:center; padding: 50px 20px; color: #64748b;">
+                        <div style="font-size: 2.5rem; margin-bottom: 15px; color: #94a3b8;"><i class="fas fa-search-minus"></i></div>
+                        <h3 style="color: #334155; margin-bottom: 5px;">No encontramos lo que buscas</h3>
+                        <p style="font-size: 0.95rem;">No hay módulos que coincidan con "<b>${searchTerm}</b>".</p>
+                        <button id="btn-limpiar-busqueda" style="margin-top: 15px; background: transparent; border: 1px solid #cbd5e1; color: #3b82f6; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s;">Limpiar Búsqueda</button>
+                    </td></tr>`;
+                
+                // Agregar evento al botón de limpiar
+                setTimeout(() => {
+                    const btnLimpiar = document.getElementById('btn-limpiar-busqueda');
+                    if (btnLimpiar) {
+                        btnLimpiar.addEventListener('click', () => {
+                            document.getElementById('buscador-modulos').value = '';
+                            filtrarModulos();
+                        });
+                    }
+                }, 0);
+
+            } else {
+                tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; padding: 40px; color: #94a3b8;"><div style="font-size: 2rem; margin-bottom: 10px;"><i class="fas fa-folder-open"></i></div>No hay módulos registrados en el sistema. Crea el primero.</td></tr>'; 
+            }
+            renderPaginationControls();
             return;
         }
         
@@ -232,7 +292,7 @@ const ModuloApp = (() => {
             tr.innerHTML = `
                 <td style="padding: 18px 24px; border-bottom: 1px solid #f1f5f9;">
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="background: #f1f5f9; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #64748b;">
+                        <div style="background: #f1f5f9; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #64748b; border: 1px solid #e2e8f0;">
                             <i class="fas fa-box"></i>
                         </div>
                         <span style="color: #0f172a; font-weight: 600; font-size: 0.95rem;">${m.strNombreModulo}</span>
@@ -248,9 +308,9 @@ const ModuloApp = (() => {
                 if (permisos.bitEditar) {
                     const btn = document.createElement('button'); 
                     btn.innerHTML = '<i class="fas fa-pen"></i>'; 
-                    btn.style.cssText = 'background: transparent; border: none; color: #3b82f6; font-size: 1.1rem; padding: 8px; cursor: pointer; transition: transform 0.2s;';
-                    btn.onmouseover = () => btn.style.transform = 'scale(1.2)';
-                    btn.onmouseout = () => btn.style.transform = 'scale(1)';
+                    btn.style.cssText = 'background: #eff6ff; border: 1px solid #bfdbfe; color: #3b82f6; font-size: 0.9rem; padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 5px;';
+                    btn.onmouseover = () => btn.style.background = '#dbeafe';
+                    btn.onmouseout = () => btn.style.background = '#eff6ff';
                     btn.title = 'Editar Módulo';
                     btn.onclick = () => openModal(true, m); 
                     accTd.appendChild(btn);
@@ -258,9 +318,9 @@ const ModuloApp = (() => {
                 if (permisos.bitEliminar) {
                     const btn = document.createElement('button'); 
                     btn.innerHTML = '<i class="fas fa-trash-alt"></i>'; 
-                    btn.style.cssText = 'background: transparent; border: none; color: #ef4444; font-size: 1.1rem; padding: 8px; cursor: pointer; margin-left: 10px; transition: transform 0.2s;';
-                    btn.onmouseover = () => btn.style.transform = 'scale(1.2)';
-                    btn.onmouseout = () => btn.style.transform = 'scale(1)';
+                    btn.style.cssText = 'background: #fef2f2; border: 1px solid #fecaca; color: #ef4444; font-size: 0.9rem; padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s;';
+                    btn.onmouseover = () => btn.style.background = '#fee2e2';
+                    btn.onmouseout = () => btn.style.background = '#fef2f2';
                     btn.title = 'Eliminar Módulo';
                     btn.onclick = () => deleteModulo(m.id); 
                     accTd.appendChild(btn);
@@ -273,30 +333,49 @@ const ModuloApp = (() => {
     }
 
     function renderPaginationControls() {
-        const controls = document.getElementById('pagination-controls-mod'); controls.innerHTML = '';
-        const pageCount = Math.ceil(modulosData.length / rowsPerPage);
+        const controls = document.getElementById('pagination-controls-mod'); 
+        controls.innerHTML = '';
+        const pageCount = Math.ceil(filteredData.length / rowsPerPage);
+        
         if(pageCount <= 1) return;
 
+        const createBtn = (text, pageNum, disabled = false, icon = null) => {
+            const btn = document.createElement('button');
+            const innerContent = icon ? `<i class="${icon}"></i>` : text;
+            btn.innerHTML = innerContent;
+            
+            if (disabled) {
+                btn.style.cssText = `background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; margin: 2px; cursor: not-allowed; opacity: 0.7;`;
+                btn.disabled = true;
+            } else {
+                const isCurrent = pageNum === currentPage && text !== 'Inicio' && text !== 'Fin';
+                btn.style.cssText = `background: ${isCurrent ? '#2563eb' : '#ffffff'}; color: ${isCurrent ? '#ffffff' : '#475569'}; border: 1px solid ${isCurrent ? '#2563eb' : '#e2e8f0'}; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s; margin: 2px;`;
+                if (!isCurrent) btn.onmouseover = () => btn.style.background = '#f1f5f9';
+                if (!isCurrent) btn.onmouseout = () => btn.style.background = '#ffffff';
+                btn.onclick = () => { currentPage = pageNum; renderTable(); };
+            }
+            return btn;
+        };
+
+        // Botón Inicio
+        controls.appendChild(createBtn('Inicio', 1, currentPage === 1, 'fas fa-angle-double-left'));
+
+        // Números de Página
         for (let i = 1; i <= pageCount; i++) {
-            const btn = document.createElement('button'); 
-            btn.textContent = i; 
-            btn.style.cssText = `background: ${i === currentPage ? '#2563eb' : '#ffffff'}; color: ${i === currentPage ? '#ffffff' : '#475569'}; border: 1px solid ${i === currentPage ? '#2563eb' : '#e2e8f0'}; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s; margin: 2px;`;
-            if (i !== currentPage) btn.onmouseover = () => btn.style.background = '#f1f5f9';
-            if (i !== currentPage) btn.onmouseout = () => btn.style.background = '#ffffff';
-            btn.onclick = () => { currentPage = i; renderTable(); }; 
-            controls.appendChild(btn);
+            controls.appendChild(createBtn(i, i));
         }
+
+        // Botón Fin
+        controls.appendChild(createBtn('Fin', pageCount, currentPage === pageCount, 'fas fa-angle-double-right'));
     }
 
     function setupEventListeners() {
         const btnNuevo = document.getElementById('btn-nuevo-mod');
         if (btnNuevo) btnNuevo.addEventListener('click', () => openModal(false));
         
-        // Cierre de modal
         document.getElementById('btn-close-modal').addEventListener('click', closeModal);
         document.getElementById('btn-cancel-modal').addEventListener('click', closeModal);
         
-        // Cerrar modal al hacer clic en el fondo difuminado
         document.getElementById('modal-modulo').addEventListener('click', (e) => {
             if(e.target.id === 'modal-modulo') closeModal();
         });
@@ -305,6 +384,14 @@ const ModuloApp = (() => {
             e.preventDefault(); 
             saveModulo({ strNombreModulo: document.getElementById('nombre-modulo').value.trim() }, document.getElementById('modulo-id').value); 
         });
+
+        // Evento para el buscador (se ejecuta mientras escribes)
+        const inputBuscador = document.getElementById('buscador-modulos');
+        if (inputBuscador) {
+            inputBuscador.addEventListener('keyup', filtrarModulos);
+            // También escuchar cuando se limpia con la 'X' nativa de algunos navegadores
+            inputBuscador.addEventListener('search', filtrarModulos); 
+        }
     }
     
     return { render: renderView };
