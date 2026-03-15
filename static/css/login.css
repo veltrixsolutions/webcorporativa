@@ -168,17 +168,19 @@ input[type="email"]:focus {
 
 .input-wrapper:focus-within .input-icon { color: #2563eb; }
 
-/* --- RECAPTCHA --- */
-/* --- RECAPTCHA RESPONSIVE PROFESIONAL --- */
-.recaptcha-wrapper {
-    display: flex;
-    justify-content: flex-start;
-    width: 100%;
-    margin: 25px 0 20px 0;
+/* --- RECAPTCHA AL MISMO ANCHO QUE INPUTS --- */
+
+.recaptcha-wrapper{
+    width:100%;
+    margin:25px 0 20px 0;
 }
 
-.recaptcha-wrapper .g-recaptcha {
-    transform-origin: left top;
+.recaptcha-wrapper .g-recaptcha{
+    width:100%;
+}
+
+.recaptcha-wrapper iframe{
+    width:100% !important;
 }
 
 /* Ajuste automático en pantallas pequeñas */
