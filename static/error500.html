@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error Inesperado - Veltrix Solutions</title>
+    <title>Error del Servidor - Veltrix Solutions</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -175,9 +175,9 @@
                 <i class="fas fa-server"></i>
             </div>
             
-            <div class="error-code">ERROR DEL SERVIDOR</div>
+            <div class="error-code">ERROR 500</div>
             
-            <h1>Ups... Algo no salió como esperábamos</h1>
+            <h1>Ups... Algo falló en el servidor</h1>
             <p>Ocurrió un problema inesperado al procesar tu solicitud. Nuestro equipo técnico ha sido notificado y está trabajando en ello.</p>
             
             <a href="#" id="btn-smart-redirect" class="btn-primary" style="display: none;">
@@ -189,22 +189,20 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const btnRedirect = document.getElementById('btn-smart-redirect');
-            // Verificamos si existe el token de sesión
             const jwtToken = localStorage.getItem('jwt_token');
 
             if (jwtToken) {
-                // Si el usuario ESTÁ autenticado, lo mandamos al dashboard
+                // Usuario autenticado
                 btnRedirect.href = '/dashboard.html'; 
                 btnRedirect.innerHTML = '<i class="fas fa-home"></i> Volver al Inicio';
             } else {
-                // Si el usuario NO ESTÁ autenticado, lo mandamos a loguearse
+                // Usuario no autenticado
                 btnRedirect.href = '/login.html'; 
                 btnRedirect.innerHTML = '<i class="fas fa-sign-in-alt"></i> Ir a Iniciar Sesión';
-                // Cambiamos ligeramente el color para indicar que es un flujo distinto (opcional)
-                btnRedirect.style.backgroundColor = '#0f172a'; 
+                btnRedirect.style.backgroundColor = '#0f172a'; // Tono oscuro para diferenciarlo del flujo normal
+                btnRedirect.style.boxShadow = '0 4px 6px -1px rgba(15, 23, 42, 0.2)';
             }
 
-            // Mostramos el botón una vez que sabemos a dónde debe ir
             btnRedirect.style.display = 'flex';
         });
     </script>

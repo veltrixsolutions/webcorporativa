@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
@@ -170,17 +171,25 @@ func main() {
 
 // customHTTPErrorHandler redirige los errores a páginas estáticas personalizadas
 func customHTTPErrorHandler(err error, c echo.Context) {
-	code := 500
+	code := http.StatusInternalServerError // 500 por defecto
 	if he, ok := err.(*echo.HTTPError); ok {
 		code = he.Code
 	}
 
+	// Intentamos buscar la página específica del error (ej. error404.html o error500.html)
 	errorPage := fmt.Sprintf("static/error%d.html", code)
 	if _, errStat := os.Stat(errorPage); errStat == nil {
-		_ = c.File(errorPage)
+		fileContent, _ := os.ReadFile(errorPage)
+		_ = c.HTMLBlob(code, fileContent)
 	} else {
-		// Fallback por si la página personalizada no existe
-		_ = c.File("static/error_general.html")
+		// Fallback: Si no existe la página específica, buscamos error_general.html
+		if _, errGen := os.Stat("static/error_general.html"); errGen == nil {
+			fileContentGen, _ := os.ReadFile("static/error_general.html")
+			_ = c.HTMLBlob(code, fileContentGen)
+		} else {
+			// Fallback extremo
+			_ = c.String(code, fmt.Sprintf("Error %d: Ha ocurrido un problema en el servidor.", code))
+		}
 	}
 
 	c.Logger().Error(err)
