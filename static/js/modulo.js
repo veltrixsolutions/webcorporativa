@@ -14,66 +14,66 @@ const ModuloApp = (() => {
         if (!permisos.bitConsulta) {
             container.innerHTML = `
                 <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
-                    <div style="max-width: 500px; padding: 50px 40px; text-align: center; background: #ffffff; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
-                        <div style="width: 80px; height: 80px; background: #fef2f2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
-                            <i class="fas fa-lock" style="font-size: 2.5rem; color: #ef4444;"></i>
+                    <div style="max-width: 500px; padding: 50px 40px; text-align: center; background: var(--bg-card); border-radius: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
+                        <div style="width: 80px; height: 80px; background: var(--danger-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                            <i class="fas fa-lock" style="font-size: 2.5rem; color: var(--danger-text);"></i>
                         </div>
-                        <h1 style="color: #0f172a; font-size: 1.8rem; margin-bottom: 10px; font-weight: 700;">Acceso Restringido</h1>
-                        <p style="color: #64748b; font-size: 1rem; line-height: 1.5;">No tienes los privilegios necesarios para visualizar o modificar la configuración de los módulos del sistema.</p>
+                        <h1 style="color: var(--text-primary); font-size: 1.8rem; margin-bottom: 10px; font-weight: 700;">Acceso Restringido</h1>
+                        <p style="color: var(--text-secondary); font-size: 1rem; line-height: 1.5;">No tienes los privilegios necesarios para visualizar o modificar la configuración de los módulos del sistema.</p>
                     </div>
                 </div>`;
             return;
         }
 
         const btnNuevoHTML = permisos.bitAgregar 
-            ? `<button id="btn-nuevo-mod" class="btn-primary" style="background-color: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px rgba(37,99,235,0.2);">
+            ? `<button id="btn-nuevo-mod" class="btn-primary" style="background-color: var(--brand-primary); color: var(--text-inverse); border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px rgba(37,99,235,0.2);">
                 <i class="fas fa-plus"></i> Nuevo Módulo
                </button>` 
             : '';
 
         container.innerHTML = `
             <style>
-                .ux-modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 1000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s ease; padding: 15px; }
+                .ux-modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 1000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s ease; padding: 15px; }
                 .ux-modal-overlay.active { opacity: 1; visibility: visible; }
-                .ux-modal-card { background: #ffffff; border-radius: 16px; width: 100%; max-width: 480px; transform: translateY(30px) scale(0.95); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
+                .ux-modal-card { background: var(--bg-card); border-radius: 16px; width: 100%; max-width: 480px; transform: translateY(30px) scale(0.95); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: var(--shadow-md); border: 1px solid var(--border-color); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
                 .ux-modal-overlay.active .ux-modal-card { transform: translateY(0) scale(1); }
                 
                 /* Estilos para Modal de Confirmación */
                 .ux-confirm-card { max-width: 400px; text-align: center; padding: 30px 24px; border-radius: 20px; }
-                .ux-confirm-icon { width: 70px; height: 70px; background: #fef2f2; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 20px; color: #ef4444; font-size: 2rem; }
-                .ux-confirm-title { font-size: 1.4rem; color: #0f172a; font-weight: 700; margin-bottom: 10px; }
-                .ux-confirm-text { color: #64748b; font-size: 0.95rem; line-height: 1.5; margin-bottom: 25px; }
+                .ux-confirm-icon { width: 70px; height: 70px; background: var(--danger-bg); border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 20px; color: var(--danger-text); font-size: 2rem; }
+                .ux-confirm-title { font-size: 1.4rem; color: var(--text-primary); font-weight: 700; margin-bottom: 10px; }
+                .ux-confirm-text { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5; margin-bottom: 25px; }
                 .ux-confirm-actions { display: flex; gap: 12px; justify-content: center; }
                 .ux-confirm-btn { flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; font-size: 0.95rem; }
-                .ux-confirm-cancel { background: #f1f5f9; color: #475569; }
-                .ux-confirm-cancel:hover { background: #e2e8f0; }
-                .ux-confirm-delete { background: #ef4444; color: white; box-shadow: 0 4px 6px rgba(239,68,68,0.2); }
-                .ux-confirm-delete:hover { background: #dc2626; }
+                .ux-confirm-cancel { background: var(--bg-hover); color: var(--text-primary); border: 1px solid var(--border-color); }
+                .ux-confirm-cancel:hover { background: var(--border-color); }
+                .ux-confirm-delete { background: var(--danger-hover-bg); color: var(--text-inverse); box-shadow: 0 4px 6px rgba(239,68,68,0.2); }
+                .ux-confirm-delete:hover { filter: brightness(1.1); }
 
-                .ux-toast { position: fixed; bottom: 30px; right: 30px; background: #ffffff; border-radius: 10px; padding: 16px 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; z-index: 1100; transform: translateX(150%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-left: 4px solid #3b82f6; max-width: calc(100vw - 60px); }
+                .ux-toast { position: fixed; bottom: 30px; right: 30px; background: var(--bg-card); border-radius: 10px; padding: 16px 24px; box-shadow: var(--shadow-md); display: flex; align-items: center; gap: 12px; z-index: 1100; transform: translateX(150%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-left: 4px solid var(--brand-primary); border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
                 .ux-toast.show { transform: translateX(0); }
                 .ux-toast.success { border-left-color: #10b981; }
-                .ux-toast.error { border-left-color: #ef4444; }
+                .ux-toast.error { border-left-color: var(--danger-text); }
                 
-                .ux-table-row { transition: background-color 0.2s ease, transform 0.2s ease; }
-                .ux-table-row:hover { background-color: #f8fafc; transform: scale(1.002); }
+                .ux-table-row { transition: background-color 0.2s ease, transform 0.2s ease; border-bottom: 1px solid var(--border-color); }
+                .ux-table-row:hover { background-color: var(--bg-hover); transform: scale(1.002); }
                 
-                .ux-input { width: 100%; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; color: #0f172a; transition: all 0.2s; background: #f8fafc; }
-                .ux-input:focus { outline: none; border-color: #3b82f6; background: #ffffff; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+                .ux-input { width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.95rem; color: var(--text-primary); transition: all 0.2s; background: var(--input-bg); }
+                .ux-input:focus { outline: none; border-color: var(--border-focus); background: var(--bg-card); box-shadow: var(--shadow-focus); }
                 
                 .search-container { position: relative; width: 100%; max-width: 500px; margin-bottom: 25px; }
-                .search-container i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem; }
-                .search-input { width: 100%; padding: 14px 16px 14px 45px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; background: #ffffff; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-                .search-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.15); }
+                .search-container i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 1.1rem; }
+                .search-input { width: 100%; padding: 14px 16px 14px 45px; border: 1px solid var(--border-color); border-radius: 10px; font-size: 0.95rem; background: var(--bg-card); color: var(--text-primary); transition: all 0.2s; box-shadow: var(--shadow-sm); }
+                .search-input:focus { outline: none; border-color: var(--border-focus); box-shadow: var(--shadow-focus); }
             </style>
 
             <div style="max-width: 1100px; margin: 0 auto; padding: 20px;">
-                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; padding-bottom: 15px; gap: 15px;">
+                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; gap: 15px;">
                     <div>
-                        <h1 style="color: #0f172a; font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 5px;">
-                            <i class="fas fa-cubes" style="color: #64748b; margin-right: 10px;"></i>Módulos
+                        <h1 style="color: var(--text-primary); font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 5px;">
+                            <i class="fas fa-cubes" style="color: var(--text-secondary); margin-right: 10px;"></i>Módulos
                         </h1>
-                        <p style="color: #64748b; font-size: 1rem; margin: 0;">Administra los componentes estructurales del sistema.</p>
+                        <p style="color: var(--text-secondary); font-size: 1rem; margin: 0;">Administra los componentes estructurales del sistema.</p>
                     </div>
                     <div>${btnNuevoHTML}</div>
                 </div>
@@ -83,43 +83,43 @@ const ModuloApp = (() => {
                     <input type="text" id="buscador-modulos" class="search-input" placeholder="Buscar módulos por nombre..." autocomplete="off">
                 </div>
 
-                <div style="background: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: hidden;">
+                <div style="background: var(--bg-card); border-radius: 16px; box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); overflow: hidden;">
                     <div style="overflow-x: auto;">
                         <table style="width: 100%; border-collapse: collapse; text-align: left; min-width: 500px;">
-                            <thead style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                            <thead style="background: var(--table-header-bg); border-bottom: 1px solid var(--border-color);">
                                 <tr>
-                                    <th style="padding: 16px 24px; color: #475569; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Estructura del Módulo</th>
-                                    ${permisos.bitEditar || permisos.bitEliminar ? '<th style="padding: 16px 24px; text-align: right; color: #475569; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Acciones</th>' : ''}
+                                    <th style="padding: 16px 24px; color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Estructura del Módulo</th>
+                                    ${permisos.bitEditar || permisos.bitEliminar ? '<th style="padding: 16px 24px; text-align: right; color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Acciones</th>' : ''}
                                 </tr>
                             </thead>
                             <tbody id="tabla-modulos-body"></tbody>
                         </table>
                     </div>
-                    <div id="pagination-controls-mod" style="padding: 15px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: center; align-items: center; gap: 8px; background: #fdfdfd; flex-wrap: wrap;"></div>
+                    <div id="pagination-controls-mod" style="padding: 15px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: center; align-items: center; gap: 8px; background: var(--bg-card); flex-wrap: wrap;"></div>
                 </div>
             </div>
 
             <div id="modal-modulo" class="ux-modal-overlay">
                 <div class="ux-modal-card">
                     <form id="form-modulo" style="display: flex; flex-direction: column; height: 100%;">
-                        <div style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #fdfdfd; flex-shrink: 0;">
-                            <h2 id="form-titulo" style="margin: 0; font-size: 1.25rem; color: #0f172a; font-weight: 700; display: flex; align-items: center; gap: 10px;">
-                                <div style="background: #eff6ff; color: #3b82f6; width: 32px; height: 32px; border-radius: 8px; display: flex; justify-content: center; align-items: center;"><i class="fas fa-layer-group"></i></div>
+                        <div style="padding: 20px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); flex-shrink: 0;">
+                            <h2 id="form-titulo" style="margin: 0; font-size: 1.25rem; color: var(--text-primary); font-weight: 700; display: flex; align-items: center; gap: 10px;">
+                                <div style="background: var(--bg-active); color: var(--brand-primary); width: 32px; height: 32px; border-radius: 8px; display: flex; justify-content: center; align-items: center;"><i class="fas fa-layer-group"></i></div>
                                 <span>Nuevo Módulo</span>
                             </h2>
-                            <button type="button" id="btn-close-modal" style="background: transparent; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer; transition: color 0.2s;"><i class="fas fa-times"></i></button>
+                            <button type="button" id="btn-close-modal" style="background: transparent; border: none; color: var(--text-secondary); font-size: 1.2rem; cursor: pointer; transition: color 0.2s;"><i class="fas fa-times"></i></button>
                         </div>
                         
                         <div style="padding: 24px; overflow-y: auto; flex-grow: 1;">
                             <input type="hidden" id="modulo-id" value="">
                             <div>
-                                <label style="display: block; margin-bottom: 8px; color: #334155; font-size: 0.9rem; font-weight: 600;">Nombre del Módulo <span style="color: #ef4444;">*</span></label>
+                                <label style="display: block; margin-bottom: 8px; color: var(--text-primary); font-size: 0.9rem; font-weight: 600;">Nombre del Módulo <span style="color: var(--danger-text);">*</span></label>
                                 <input type="text" id="nombre-modulo" class="ux-input" required autocomplete="off" placeholder="Ej. Panel de Control, Reportes...">
                             </div>
                         </div>
 
-                        <div style="padding: 16px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; flex-shrink: 0;">
-                            <button type="button" id="btn-cancel-modal" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Cancelar</button>
+                        <div style="padding: 16px 24px; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; flex-shrink: 0;">
+                            <button type="button" id="btn-cancel-modal" style="background: var(--bg-hover); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Cancelar</button>
                             <button type="submit" id="btn-save-mod" style="background: #10b981; border: none; color: white; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px rgba(16,185,129,0.2);">
                                 <i class="fas fa-check"></i> <span>Guardar</span>
                             </button>
@@ -145,8 +145,8 @@ const ModuloApp = (() => {
             <div id="ux-toast" class="ux-toast">
                 <div id="toast-icon" style="font-size: 1.2rem;"></div>
                 <div style="display: flex; flex-direction: column;">
-                    <span id="toast-title" style="font-weight: 700; color: #0f172a; font-size: 0.95rem;">Notificación</span>
-                    <span id="toast-msg" style="color: #64748b; font-size: 0.85rem;"></span>
+                    <span id="toast-title" style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem;">Notificación</span>
+                    <span id="toast-msg" style="color: var(--text-secondary); font-size: 0.85rem;"></span>
                 </div>
             </div>
         `;
@@ -178,7 +178,7 @@ const ModuloApp = (() => {
             document.getElementById('toast-icon').innerHTML = '<i class="fas fa-check-circle" style="color: #10b981;"></i>';
         } else {
             toast.className = 'ux-toast show error';
-            document.getElementById('toast-icon').innerHTML = '<i class="fas fa-exclamation-circle" style="color: #ef4444;"></i>';
+            document.getElementById('toast-icon').innerHTML = '<i class="fas fa-exclamation-circle" style="color: var(--danger-text);"></i>';
         }
 
         setTimeout(() => { toast.classList.remove('show'); }, 4000);
@@ -190,11 +190,11 @@ const ModuloApp = (() => {
         document.getElementById('modulo-id').value = '';
         
         if (isEdit && m) {
-            document.getElementById('form-titulo').innerHTML = `<div style="background: #fdf4ff; color: #d946ef; width: 32px; height: 32px; border-radius: 8px; display: flex; justify-content: center; align-items: center;"><i class="fas fa-edit"></i></div><span>Editar Módulo</span>`;
+            document.getElementById('form-titulo').innerHTML = `<div style="background: var(--bg-hover); color: var(--text-accent); width: 32px; height: 32px; border-radius: 8px; display: flex; justify-content: center; align-items: center;"><i class="fas fa-edit"></i></div><span>Editar Módulo</span>`;
             document.getElementById('modulo-id').value = m.id;
             document.getElementById('nombre-modulo').value = m.strNombreModulo;
         } else {
-            document.getElementById('form-titulo').innerHTML = `<div style="background: #ecfdf5; color: #10b981; width: 32px; height: 32px; border-radius: 8px; display: flex; justify-content: center; align-items: center;"><i class="fas fa-plus"></i></div><span>Crear Módulo</span>`;
+            document.getElementById('form-titulo').innerHTML = `<div style="background: rgba(16, 185, 129, 0.1); color: #10b981; width: 32px; height: 32px; border-radius: 8px; display: flex; justify-content: center; align-items: center;"><i class="fas fa-plus"></i></div><span>Crear Módulo</span>`;
         }
         
         document.getElementById('modal-modulo').classList.add('active');
@@ -303,11 +303,11 @@ const ModuloApp = (() => {
             const searchTerm = document.getElementById('buscador-modulos').value;
             if (searchTerm) {
                 tbody.innerHTML = `
-                    <tr><td colspan="2" style="text-align:center; padding: 50px 20px; color: #64748b;">
-                        <div style="font-size: 2.5rem; margin-bottom: 15px; color: #94a3b8;"><i class="fas fa-search-minus"></i></div>
-                        <h3 style="color: #334155; margin-bottom: 5px;">No encontramos lo que buscas</h3>
+                    <tr><td colspan="2" style="text-align:center; padding: 50px 20px; color: var(--text-secondary);">
+                        <div style="font-size: 2.5rem; margin-bottom: 15px; color: var(--text-secondary);"><i class="fas fa-search-minus"></i></div>
+                        <h3 style="color: var(--text-primary); margin-bottom: 5px;">No encontramos lo que buscas</h3>
                         <p style="font-size: 0.95rem;">No hay módulos que coincidan con "<b>${searchTerm}</b>".</p>
-                        <button id="btn-limpiar-busqueda" style="margin-top: 15px; background: transparent; border: 1px solid #cbd5e1; color: #3b82f6; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s;">Limpiar Búsqueda</button>
+                        <button id="btn-limpiar-busqueda" style="margin-top: 15px; background: transparent; border: 1px solid var(--border-color); color: var(--brand-primary); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s;">Limpiar Búsqueda</button>
                     </td></tr>`;
                 
                 setTimeout(() => {
@@ -321,7 +321,7 @@ const ModuloApp = (() => {
                 }, 0);
 
             } else {
-                tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; padding: 40px; color: #94a3b8;"><div style="font-size: 2rem; margin-bottom: 10px;"><i class="fas fa-folder-open"></i></div>No hay módulos registrados en el sistema. Crea el primero.</td></tr>'; 
+                tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; padding: 40px; color: var(--text-secondary);"><div style="font-size: 2rem; margin-bottom: 10px;"><i class="fas fa-folder-open"></i></div>No hay módulos registrados en el sistema. Crea el primero.</td></tr>'; 
             }
             renderPaginationControls();
             return;
@@ -332,25 +332,24 @@ const ModuloApp = (() => {
             tr.className = 'ux-table-row';
 
             tr.innerHTML = `
-                <td style="padding: 18px 24px; border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 18px 24px;">
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="background: #f1f5f9; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #64748b; border: 1px solid #e2e8f0;">
+                        <div style="background: var(--bg-hover); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); border: 1px solid var(--border-color);">
                             <i class="fas fa-box"></i>
                         </div>
-                        <span style="color: #0f172a; font-weight: 600; font-size: 0.95rem;">${m.strNombreModulo}</span>
+                        <span style="color: var(--text-primary); font-weight: 600; font-size: 0.95rem;">${m.strNombreModulo}</span>
                     </div>
                 </td>`;
             
             if (permisos.bitEditar || permisos.bitEliminar) {
                 const accTd = document.createElement('td');
                 accTd.style.padding = '18px 24px';
-                accTd.style.borderBottom = '1px solid #f1f5f9';
                 accTd.style.textAlign = 'right';
 
                 if (permisos.bitEditar) {
                     const btn = document.createElement('button'); 
                     btn.innerHTML = '<i class="fas fa-pen"></i>'; 
-                    btn.style.cssText = 'background: transparent; border: none; color: #3b82f6; font-size: 1.1rem; padding: 8px; cursor: pointer; transition: transform 0.2s;';
+                    btn.style.cssText = 'background: transparent; border: none; color: var(--brand-primary); font-size: 1.1rem; padding: 8px; cursor: pointer; transition: transform 0.2s;';
                     btn.onmouseover = () => btn.style.transform = 'scale(1.2)';
                     btn.onmouseout = () => btn.style.transform = 'scale(1)';
                     btn.title = 'Editar Módulo';
@@ -360,11 +359,10 @@ const ModuloApp = (() => {
                 if (permisos.bitEliminar) {
                     const btn = document.createElement('button'); 
                     btn.innerHTML = '<i class="fas fa-trash-alt"></i>'; 
-                    btn.style.cssText = 'background: transparent; border: none; color: #ef4444; font-size: 1.1rem; padding: 8px; cursor: pointer; margin-left: 10px; transition: transform 0.2s;';
+                    btn.style.cssText = 'background: transparent; border: none; color: var(--danger-text); font-size: 1.1rem; padding: 8px; cursor: pointer; margin-left: 10px; transition: transform 0.2s;';
                     btn.onmouseover = () => btn.style.transform = 'scale(1.2)';
                     btn.onmouseout = () => btn.style.transform = 'scale(1)';
                     btn.title = 'Eliminar Módulo';
-                    // Ahora llama al modal de confirmación en lugar del confirm nativo
                     btn.onclick = () => openConfirmDeleteModal(m.id); 
                     accTd.appendChild(btn);
                 }
@@ -388,13 +386,13 @@ const ModuloApp = (() => {
             btn.innerHTML = innerContent;
             
             if (disabled) {
-                btn.style.cssText = `background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; margin: 2px; cursor: not-allowed; opacity: 0.7;`;
+                btn.style.cssText = `background: var(--bg-hover); color: var(--text-secondary); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; margin: 2px; cursor: not-allowed; opacity: 0.5;`;
                 btn.disabled = true;
             } else {
                 const isCurrent = pageNum === currentPage && text !== 'Inicio' && text !== 'Fin';
-                btn.style.cssText = `background: ${isCurrent ? '#2563eb' : '#ffffff'}; color: ${isCurrent ? '#ffffff' : '#475569'}; border: 1px solid ${isCurrent ? '#2563eb' : '#e2e8f0'}; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s; margin: 2px;`;
-                if (!isCurrent) btn.onmouseover = () => btn.style.background = '#f1f5f9';
-                if (!isCurrent) btn.onmouseout = () => btn.style.background = '#ffffff';
+                btn.style.cssText = `background: ${isCurrent ? 'var(--brand-primary)' : 'var(--bg-card)'}; color: ${isCurrent ? 'var(--text-inverse)' : 'var(--text-secondary)'}; border: 1px solid ${isCurrent ? 'var(--brand-primary)' : 'var(--border-color)'}; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s; margin: 2px;`;
+                if (!isCurrent) btn.onmouseover = () => btn.style.background = 'var(--bg-hover)';
+                if (!isCurrent) btn.onmouseout = () => btn.style.background = 'var(--bg-card)';
                 btn.onclick = () => { currentPage = pageNum; renderTable(); };
             }
             return btn;
