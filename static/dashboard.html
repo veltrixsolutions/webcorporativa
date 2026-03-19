@@ -12,13 +12,18 @@
 
     <div class="dashboard-layout">
         <aside class="sidebar">
-            <div class="sidebar-header">
-                <h2>Veltrix Solutions</h2>
+            <div class="sidebar-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <h2 style="font-size: 1.3rem; margin: 0;">Veltrix</h2>
+                <button id="btn-close-sidebar" class="btn-close-sidebar">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
+            
             <div class="user-profile">
                 <img id="user-avatar" src="" alt="Avatar" class="avatar">
                 <span id="user-name">Cargando...</span>
             </div>
+            
             <nav id="dynamic-menu" class="sidebar-menu">
                 </nav>
         </aside>

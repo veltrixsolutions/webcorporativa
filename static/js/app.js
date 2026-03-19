@@ -72,11 +72,11 @@ document.addEventListener('DOMContentLoaded', () => {
             avatarImg.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.nombre)}&background=2563eb&color=fff`;
         }
     }
-
-    // ==========================================
+// ==========================================
     // 4. LÓGICA DEL MENÚ RESPONSIVO (MÓVILES)
     // ==========================================
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const btnCloseSidebar = document.getElementById('btn-close-sidebar'); // <-- NUEVO
     const sidebar = document.querySelector('.sidebar');
     const overlay = document.getElementById('sidebar-overlay');
 
@@ -95,7 +95,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (mobileMenuBtn) mobileMenuBtn.addEventListener('click', toggleMobileMenu);
-    if (overlay) overlay.addEventListener('click', toggleMobileMenu);
+    if (overlay) overlay.addEventListener('click', toggleMobileMenu); // Cerrar al tocar la sombra lateral
+    if (btnCloseSidebar) btnCloseSidebar.addEventListener('click', toggleMobileMenu); // <-- Cerrar con la X de arriba
 
     // ==========================================
     // 5. CARGA DINÁMICA DEL MENÚ
