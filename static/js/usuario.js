@@ -13,8 +13,8 @@ const UsuarioModule = (() => {
 
         if (!permisos.bitConsulta) {
             container.innerHTML = `
-                <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
-                    <div style="max-width: 500px; padding: 50px 40px; text-align: center; background: var(--bg-card); border-radius: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: center; align-items: center; height: 100%; padding: 20px;">
+                    <div style="max-width: 500px; padding: 50px 40px; text-align: center; background: var(--bg-card); border-radius: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color); width: 100%;">
                         <div style="width: 80px; height: 80px; background: var(--danger-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
                             <i class="fas fa-lock" style="font-size: 2.5rem; color: var(--danger-text);"></i>
                         </div>
@@ -26,7 +26,7 @@ const UsuarioModule = (() => {
         }
 
         const btnNuevoHTML = permisos.bitAgregar 
-            ? `<button id="btn-nuevo-usuario" class="btn-primary" style="background-color: var(--brand-primary); color: var(--text-inverse); border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px rgba(37,99,235,0.2);">
+            ? `<button id="btn-nuevo-usuario" class="btn-primary" style="background-color: var(--brand-primary); color: var(--text-inverse); border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px rgba(37,99,235,0.2);">
                 <i class="fas fa-user-plus"></i> Nuevo Usuario
                </button>` 
             : '';
@@ -67,10 +67,32 @@ const UsuarioModule = (() => {
                 .search-container i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 1.1rem; }
                 .search-input { width: 100%; padding: 14px 16px 14px 45px; border: 1px solid var(--border-color); border-radius: 10px; font-size: 0.95rem; background: var(--bg-card); color: var(--text-primary); transition: all 0.2s; box-shadow: var(--shadow-sm); }
                 .search-input:focus { outline: none; border-color: var(--border-focus); box-shadow: var(--shadow-focus); }
+
+                .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+                /* --- ADAPTACIONES RESPONSIVAS --- */
+                @media screen and (max-width: 768px) {
+                    .ux-header-wrapper { flex-direction: column !important; align-items: stretch !important; gap: 20px !important; }
+                    .ux-header-wrapper > div { width: 100%; }
+                    #btn-nuevo-usuario { width: 100%; }
+                    .search-container { max-width: 100%; }
+                    .ux-toast { right: 15px; bottom: 15px; left: 15px; width: auto; max-width: none; }
+                    .ux-modal-card { margin: auto; }
+                    .ux-confirm-actions { flex-direction: column; }
+                    .ux-confirm-btn { width: 100%; }
+                    th, td { padding: 12px 10px !important; }
+
+                    /* Formulario colapsado a una columna */
+                    .form-grid { grid-template-columns: 1fr !important; }
+                    
+                    /* Botones del modal de formulario */
+                    .modal-actions { flex-direction: column-reverse !important; gap: 12px !important; }
+                    .modal-actions button { width: 100% !important; justify-content: center !important; flex: none !important; }
+                }
             </style>
 
             <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
-                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; gap: 15px;">
+                <div class="ux-header-wrapper" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; gap: 15px;">
                     <div>
                         <h1 style="margin: 0; color: var(--text-primary); font-size: 1.75rem; font-weight: 700;">
                             <i class="fas fa-users" style="color: var(--text-secondary); margin-right: 10px;"></i>Directorio de Usuarios
@@ -120,7 +142,7 @@ const UsuarioModule = (() => {
                         <div style="padding: 30px; overflow-y: auto; flex-grow: 1;">
                             <input type="hidden" id="usuario-id" value="">
                             
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div class="form-grid">
                                 <div>
                                     <label style="display: block; margin-bottom: 8px; color: var(--text-primary); font-size: 0.9rem; font-weight: 600;">Nombre Completo <span style="color: var(--danger-text);">*</span></label>
                                     <input type="text" id="nombre-usuario" class="ux-input" required placeholder="Ej. Kevin Martínez">
@@ -156,9 +178,9 @@ const UsuarioModule = (() => {
                             </div>
                         </div>
 
-                        <div style="padding: 20px 30px; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 12px; flex-shrink: 0; flex-wrap: wrap;">
-                            <button type="button" id="btn-cancel-modal" style="background: var(--bg-hover); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Cancelar</button>
-                            <button type="submit" id="btn-save-usr" style="background: #10b981; border: none; color: white; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px rgba(16,185,129,0.2);">
+                        <div class="modal-actions" style="padding: 20px 30px; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 12px; flex-shrink: 0; flex-wrap: wrap;">
+                            <button type="button" id="btn-cancel-modal" style="background: var(--bg-hover); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; flex: 1; min-width: 120px;">Cancelar</button>
+                            <button type="submit" id="btn-save-usr" style="background: #10b981; border: none; color: white; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px rgba(16,185,129,0.2); flex: 1; min-width: 120px;">
                                 <i class="fas fa-check"></i> <span>Guardar Usuario</span>
                             </button>
                         </div>
@@ -393,7 +415,7 @@ const UsuarioModule = (() => {
                 ? `<span style="background-color: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); padding: 6px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;"><i class="fas fa-circle" style="font-size: 0.4rem;"></i>Activo</span>` 
                 : `<span style="background-color: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-border); padding: 6px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;"><i class="fas fa-circle" style="font-size: 0.4rem;"></i>Inactivo</span>`;
 
-            // En modo oscuro, ui-avatars con fondo e2e8f0 desentona, puedes hacerlo transparente o dark
+            // En modo oscuro, ui-avatars con fondo oscuro
             const avatarUrl = u.strRutaImagen || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.strNombreUsuario)}&background=e2e8f0&color=475569&bold=true&rounded=false`;
 
             tr.innerHTML = `

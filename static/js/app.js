@@ -2,7 +2,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
-    // 1. LÓGICA DEL TEMA (Se queda en localStorage para compartir entre pestañas)
+    // 1. LÓGICA DEL TEMA 
     // ==========================================
     const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
     if (toggleSwitch) {
@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 2. AUTENTICACIÓN (Ahora usa sessionStorage)
     // ==========================================
-    const token = sessionStorage.getItem('jwt_token'); // <-- CAMBIO AQUÍ
+    const token = sessionStorage.getItem('jwt_token'); 
     if (!token) { window.location.href = '/login.html'; return; }
 
     function parseJwt(token) {
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const userData = parseJwt(token);
     if (!userData) {
-        sessionStorage.removeItem('jwt_token'); // <-- CAMBIO AQUÍ
+        sessionStorage.removeItem('jwt_token'); 
         window.location.href = '/login.html';
         return;
     }
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnLogout = document.getElementById('btn-logout');
     if (btnLogout) {
         btnLogout.addEventListener('click', () => {
-            sessionStorage.removeItem('jwt_token'); // <-- CAMBIO AQUÍ
+            sessionStorage.removeItem('jwt_token'); 
             window.location.href = '/login.html'; 
         });
     }
@@ -74,14 +74,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 4. CARGA DINÁMICA DEL MENÚ
+    // 4. LÓGICA DEL MENÚ RESPONSIVO (MÓVILES)
+    // ==========================================
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    function toggleMobileMenu() {
+        if (sidebar && overlay) {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        }
+    }
+
+    // Cierra el menú automáticamente si se hace clic en un enlace en versión móvil
+    function closeMenuOnMobile() {
+        if (window.innerWidth <= 768 && sidebar && sidebar.classList.contains('open')) {
+            toggleMobileMenu();
+        }
+    }
+
+    if (mobileMenuBtn) mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+    if (overlay) overlay.addEventListener('click', toggleMobileMenu);
+
+    // ==========================================
+    // 5. CARGA DINÁMICA DEL MENÚ
     // ==========================================
     async function loadMenu() {
         let menus = [];
         try {
             const response = await fetch('/api/v1/menu', { headers: { 'Authorization': `Bearer ${token}` } });
             if (response.status === 401 || response.status === 403) {
-                sessionStorage.removeItem('jwt_token'); // <-- CAMBIO AQUÍ
+                sessionStorage.removeItem('jwt_token');
                 window.location.href = '/login.html';
                 return;
             }
@@ -130,6 +154,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.classList.add('active');
                     updateBreadcrumbs(menuGroup.nombre_menu, modulo.nombre);
                     loadModuleContent(modulo.id, modulo.nombre, userData.perfil_id);
+                    
+                    // UX: Cerramos el menú en móviles después de seleccionar un módulo
+                    closeMenuOnMobile();
                 });
                 groupDiv.appendChild(item);
             });
@@ -155,6 +182,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+        
+        // UX: Cerramos el menú en móviles si el usuario hace clic en "Inicio"
+        closeMenuOnMobile();
     }
 
     function updateBreadcrumbs(menuName, moduleName) {

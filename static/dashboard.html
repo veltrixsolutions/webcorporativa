@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
     <div class="dashboard-layout">
         <aside class="sidebar">
             <div class="sidebar-header">
@@ -18,13 +20,20 @@
                 <span id="user-name">Cargando...</span>
             </div>
             <nav id="dynamic-menu" class="sidebar-menu">
-            </nav>
+                </nav>
         </aside>
 
         <main class="main-content">
             <header class="topbar">
-                <div id="breadcrumbs" class="breadcrumbs">
-                    <span class="crumb">Inicio</span>
+                
+                <div style="display: flex; align-items: center;">
+                    <button id="mobile-menu-btn" class="mobile-menu-btn">
+                        <i class="fas fa-bars"></i>
+                    </button>
+
+                    <div id="breadcrumbs" class="breadcrumbs">
+                        <span class="crumb clickable" id="crumb-inicio" title="Volver al inicio">Inicio</span>
+                    </div>
                 </div>
                 
                 <div style="display: flex; align-items: center; gap: 24px;">

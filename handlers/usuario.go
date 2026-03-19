@@ -95,7 +95,6 @@ func CrearUsuario(db *sql.DB) echo.HandlerFunc {
 		// Extraemos la contraseña en texto plano antes de limpiarla
 		pwdTemporal := u.StrPwd
 
-		// CORRECCIÓN: Pasar datos específicos (incluyendo contraseña) a la goroutine
 		go func(email, nombre, token, pwd string) {
 			defer func() {
 				if r := recover(); r != nil {

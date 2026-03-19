@@ -153,7 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ correo: email })
             });
 
-            // Práctica de seguridad: Mostrar éxito incluso si el correo no existe
             showAlert("Si el correo está registrado, recibirás un enlace de recuperación en breve.", "success");
             formForgotPwd.reset();
 

@@ -13,8 +13,8 @@ const ModuloApp = (() => {
 
         if (!permisos.bitConsulta) {
             container.innerHTML = `
-                <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
-                    <div style="max-width: 500px; padding: 50px 40px; text-align: center; background: var(--bg-card); border-radius: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: center; align-items: center; height: 100%; padding: 20px;">
+                    <div style="max-width: 500px; padding: 50px 40px; text-align: center; background: var(--bg-card); border-radius: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color); width: 100%;">
                         <div style="width: 80px; height: 80px; background: var(--danger-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
                             <i class="fas fa-lock" style="font-size: 2.5rem; color: var(--danger-text);"></i>
                         </div>
@@ -26,7 +26,7 @@ const ModuloApp = (() => {
         }
 
         const btnNuevoHTML = permisos.bitAgregar 
-            ? `<button id="btn-nuevo-mod" class="btn-primary" style="background-color: var(--brand-primary); color: var(--text-inverse); border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px rgba(37,99,235,0.2);">
+            ? `<button id="btn-nuevo-mod" class="btn-primary" style="background-color: var(--brand-primary); color: var(--text-inverse); border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px rgba(37,99,235,0.2);">
                 <i class="fas fa-plus"></i> Nuevo Módulo
                </button>` 
             : '';
@@ -50,7 +50,7 @@ const ModuloApp = (() => {
                 .ux-confirm-delete { background: var(--danger-hover-bg); color: var(--text-inverse); box-shadow: 0 4px 6px rgba(239,68,68,0.2); }
                 .ux-confirm-delete:hover { filter: brightness(1.1); }
 
-                .ux-toast { position: fixed; bottom: 30px; right: 30px; background: var(--bg-card); border-radius: 10px; padding: 16px 24px; box-shadow: var(--shadow-md); display: flex; align-items: center; gap: 12px; z-index: 1100; transform: translateX(150%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-left: 4px solid var(--brand-primary); border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
+                .ux-toast { position: fixed; bottom: 30px; right: 30px; background: var(--bg-card); border-radius: 10px; padding: 16px 24px; box-shadow: var(--shadow-md); display: flex; align-items: center; gap: 12px; z-index: 1100; transform: translateX(150%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-left: 4px solid var(--brand-primary); border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); max-width: calc(100vw - 30px); }
                 .ux-toast.show { transform: translateX(0); }
                 .ux-toast.success { border-left-color: #10b981; }
                 .ux-toast.error { border-left-color: var(--danger-text); }
@@ -65,10 +65,23 @@ const ModuloApp = (() => {
                 .search-container i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 1.1rem; }
                 .search-input { width: 100%; padding: 14px 16px 14px 45px; border: 1px solid var(--border-color); border-radius: 10px; font-size: 0.95rem; background: var(--bg-card); color: var(--text-primary); transition: all 0.2s; box-shadow: var(--shadow-sm); }
                 .search-input:focus { outline: none; border-color: var(--border-focus); box-shadow: var(--shadow-focus); }
+
+                /* --- ADAPTACIONES RESPONSIVAS --- */
+                @media screen and (max-width: 768px) {
+                    .ux-header-wrapper { flex-direction: column !important; align-items: stretch !important; gap: 20px !important; }
+                    .ux-header-wrapper > div { width: 100%; }
+                    #btn-nuevo-mod { width: 100%; }
+                    .search-container { max-width: 100%; }
+                    .ux-toast { right: 15px; bottom: 15px; left: 15px; }
+                    .ux-modal-card { margin: auto; }
+                    .ux-confirm-actions { flex-direction: column; }
+                    .ux-confirm-btn { width: 100%; }
+                    th, td { padding: 12px 16px !important; }
+                }
             </style>
 
             <div style="max-width: 1100px; margin: 0 auto; padding: 20px;">
-                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; gap: 15px;">
+                <div class="ux-header-wrapper" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; gap: 15px;">
                     <div>
                         <h1 style="color: var(--text-primary); font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 5px;">
                             <i class="fas fa-cubes" style="color: var(--text-secondary); margin-right: 10px;"></i>Módulos
@@ -119,8 +132,8 @@ const ModuloApp = (() => {
                         </div>
 
                         <div style="padding: 16px 24px; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; flex-shrink: 0;">
-                            <button type="button" id="btn-cancel-modal" style="background: var(--bg-hover); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Cancelar</button>
-                            <button type="submit" id="btn-save-mod" style="background: #10b981; border: none; color: white; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px rgba(16,185,129,0.2);">
+                            <button type="button" id="btn-cancel-modal" style="background: var(--bg-hover); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; flex: 1; min-width: 120px;">Cancelar</button>
+                            <button type="submit" id="btn-save-mod" style="background: #10b981; border: none; color: white; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px rgba(16,185,129,0.2); flex: 1; min-width: 120px;">
                                 <i class="fas fa-check"></i> <span>Guardar</span>
                             </button>
                         </div>
@@ -264,7 +277,6 @@ const ModuloApp = (() => {
         btnSave.disabled = false;
     }
 
-    // Lógica modificada: Ahora ejecuta el delete real
     async function executeDeleteModulo() {
         if (!moduloAEliminar) return;
 

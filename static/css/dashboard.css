@@ -566,3 +566,92 @@ input:checked + .slider:before { transform: translateX(24px); }
     color: var(--brand-primary);
     text-decoration: underline;
 }
+
+/* ==========================================
+   7. DISEÑO RESPONSIVO (MÓVILES Y TABLETS)
+========================================== */
+
+/* Estilos base para el botón de menú y el overlay (ocultos en escritorio) */
+.mobile-menu-btn {
+    display: none;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 1.4rem;
+    cursor: pointer;
+    margin-right: 16px;
+    transition: color 0.2s ease;
+}
+
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9;
+    backdrop-filter: blur(2px);
+    transition: opacity 0.3s ease;
+}
+
+/* Reglas específicas para pantallas pequeñas */
+@media screen and (max-width: 768px) {
+    /* Mostrar el botón de menú hamburguesa */
+    .mobile-menu-btn {
+        display: block;
+    }
+
+    /* Modificar el Sidebar para que sea flotante y ocultarlo a la izquierda */
+    .sidebar {
+        position: fixed;
+        left: -280px; /* Oculto por defecto */
+        top: 0;
+        box-shadow: var(--shadow-lg);
+        transition: left 0.3s ease;
+        z-index: 10;
+    }
+
+    /* Clase activa para mostrar el Sidebar mediante JS */
+    .sidebar.open {
+        left: 0;
+    }
+
+    /* Clase para mostrar el overlay cuando el menú está abierto */
+    .sidebar-overlay.active {
+        display: block;
+    }
+
+    /* Ajustes de espaciado en la barra superior */
+    .topbar {
+        padding: 0 16px;
+    }
+
+    /* Ocultar el texto de "Cerrar Sesión" para ahorrar espacio, dejando solo el ícono */
+    .btn-logout span {
+        display: none;
+    }
+    .btn-logout {
+        padding: 8px 12px;
+    }
+
+    /* Reducir márgenes y paddings del área de contenido */
+    .content-scroll-area {
+        padding: 20px 16px;
+    }
+
+    .data-card-centered {
+        padding: 24px 16px;
+    }
+
+    .data-card-centered h1 {
+        font-size: 1.4rem;
+    }
+
+    /* Hacer que las acciones del formulario se apilen en móvil si es necesario */
+    .form-actions {
+        flex-direction: column;
+        gap: 12px;
+    }
+}

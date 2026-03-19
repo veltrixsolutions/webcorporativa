@@ -14,8 +14,8 @@ const PermisoModule = (() => {
 
         if (!permisos.bitConsulta) {
             container.innerHTML = `
-                <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
-                    <div style="max-width: 500px; padding: 50px 40px; text-align: center; background: var(--bg-card); border-radius: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: center; align-items: center; height: 100%; padding: 20px;">
+                    <div style="max-width: 500px; padding: 50px 40px; text-align: center; background: var(--bg-card); border-radius: 20px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color); width: 100%;">
                         <div style="width: 80px; height: 80px; background: var(--danger-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
                             <i class="fas fa-lock" style="font-size: 2.5rem; color: var(--danger-text);"></i>
                         </div>
@@ -26,10 +26,10 @@ const PermisoModule = (() => {
             return;
         }
 
-        // 2. Inyectar UI (Estilo Theming Veltrix)
+        // 2. Inyectar UI
         container.innerHTML = `
             <style>
-                .ux-toast { position: fixed; bottom: 30px; right: 30px; background: var(--bg-card); border-radius: 10px; padding: 16px 24px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px; z-index: 1100; transform: translateX(150%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-left: 4px solid var(--brand-primary); }
+                .ux-toast { position: fixed; bottom: 30px; right: 30px; background: var(--bg-card); border-radius: 10px; padding: 16px 24px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px; z-index: 1100; transform: translateX(150%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-left: 4px solid var(--brand-primary); max-width: calc(100vw - 60px); }
                 .ux-toast.show { transform: translateX(0); }
                 .ux-toast.success { border-left-color: #10b981; }
                 .ux-toast.error { border-left-color: var(--danger-text); }
@@ -44,11 +44,27 @@ const PermisoModule = (() => {
                 .matriz-checkbox { width: 20px; height: 20px; accent-color: var(--brand-primary); cursor: pointer; transition: transform 0.1s; }
                 .matriz-checkbox:hover { transform: scale(1.1); }
                 .matriz-checkbox:disabled { cursor: not-allowed; opacity: 0.6; filter: grayscale(100%); }
+
+                /* --- ADAPTACIONES RESPONSIVAS --- */
+                @media screen and (max-width: 768px) {
+                    .ux-header-wrapper { flex-direction: column !important; align-items: stretch !important; gap: 20px !important; }
+                    .ux-header-wrapper > div { width: 100%; }
+                    .ux-toast { right: 15px; bottom: 15px; left: 15px; width: auto; max-width: none; }
+                    th, td { padding: 12px 10px !important; }
+                    
+                    /* Adaptación para el selector y botones inferiores */
+                    .selector-wrapper { flex-direction: column !important; align-items: stretch !important; gap: 15px !important; }
+                    .selector-wrapper > div { max-width: 100% !important; }
+                    .ux-select { max-width: 100% !important; }
+                    
+                    .action-buttons-wrapper { flex-direction: column-reverse !important; gap: 12px !important; }
+                    .action-buttons-wrapper button { width: 100% !important; justify-content: center !important; }
+                }
             </style>
 
             <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
                 
-                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; gap: 15px;">
+                <div class="ux-header-wrapper" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; gap: 15px;">
                     <div>
                         <h1 style="margin: 0; color: var(--text-primary); font-size: 1.75rem; font-weight: 700;">
                             <i class="fas fa-user-shield" style="color: var(--text-secondary); margin-right: 10px;"></i>Matriz de Permisos
@@ -57,11 +73,11 @@ const PermisoModule = (() => {
                     </div>
                 </div>
 
-                <div style="background: var(--bg-card); border-radius: 12px; padding: 20px; box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); margin-bottom: 25px; display: flex; align-items: center; gap: 20px;">
+                <div class="selector-wrapper" style="background: var(--bg-card); border-radius: 12px; padding: 20px; box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); margin-bottom: 25px; display: flex; align-items: center; gap: 20px;">
                     <div style="flex-grow: 1; max-width: 500px;">
                         <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Perfil a Configurar</label>
                         <div style="display: flex; align-items: center; gap: 15px;">
-                            <div style="background: var(--bg-active); color: var(--brand-primary); width: 40px; height: 40px; border-radius: 10px; display: flex; justify-content: center; align-items: center;">
+                            <div style="background: var(--bg-active); color: var(--brand-primary); width: 40px; height: 40px; border-radius: 10px; display: flex; justify-content: center; align-items: center; flex-shrink: 0;">
                                 <i class="fas fa-users-cog" style="font-size: 1.2rem;"></i>
                             </div>
                             <select id="sel-perfil-buscador" class="ux-select">
@@ -91,9 +107,9 @@ const PermisoModule = (() => {
                     
                     <div id="pagination-controls-matriz" style="padding: 15px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: center; gap: 8px; background: var(--bg-card); flex-wrap: wrap;"></div>
                     
-                    <div style="padding: 20px 24px; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 15px;">
-                        <button type="button" id="btn-cancelar" style="background: var(--bg-hover); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: none;">Descartar Cambios</button>
-                        <button type="button" id="btn-guardar-matriz" style="background: #10b981; border: none; color: white; padding: 10px 30px; border-radius: 8px; font-weight: 600; cursor: pointer; display: none; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px rgba(16,185,129,0.2);">
+                    <div class="action-buttons-wrapper" style="padding: 20px 24px; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 15px;">
+                        <button type="button" id="btn-cancelar" style="background: var(--bg-hover); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: none; flex: 1; max-width: 250px;">Descartar Cambios</button>
+                        <button type="button" id="btn-guardar-matriz" style="background: #10b981; border: none; color: white; padding: 10px 30px; border-radius: 8px; font-weight: 600; cursor: pointer; display: none; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px rgba(16,185,129,0.2); flex: 1; max-width: 250px;">
                             <i class="fas fa-save"></i> <span>Guardar Privilegios</span>
                         </button>
                     </div>
@@ -229,7 +245,7 @@ const PermisoModule = (() => {
             tr.innerHTML = `
                 <td style="padding: 15px 20px; color: var(--text-primary); font-weight: 600; font-size: 0.95rem;">
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <div style="background: var(--bg-hover); color: var(--text-secondary); width: 32px; height: 32px; border-radius: 8px; display: flex; justify-content: center; align-items: center; border: 1px solid var(--border-color);">
+                        <div style="background: var(--bg-hover); color: var(--text-secondary); width: 32px; height: 32px; border-radius: 8px; display: flex; justify-content: center; align-items: center; border: 1px solid var(--border-color); flex-shrink: 0;">
                             <i class="fas fa-cube"></i>
                         </div>
                         ${item.strNombreModulo}
