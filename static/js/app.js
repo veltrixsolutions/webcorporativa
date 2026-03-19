@@ -72,11 +72,12 @@ document.addEventListener('DOMContentLoaded', () => {
             avatarImg.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.nombre)}&background=2563eb&color=fff`;
         }
     }
-// ==========================================
+
+    // ==========================================
     // 4. LÓGICA DEL MENÚ RESPONSIVO (MÓVILES)
     // ==========================================
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-    const btnCloseSidebar = document.getElementById('btn-close-sidebar'); // <-- NUEVO
+    const btnCloseSidebar = document.getElementById('btn-close-sidebar');
     const sidebar = document.querySelector('.sidebar');
     const overlay = document.getElementById('sidebar-overlay');
 
@@ -96,13 +97,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (mobileMenuBtn) mobileMenuBtn.addEventListener('click', toggleMobileMenu);
     if (overlay) overlay.addEventListener('click', toggleMobileMenu); // Cerrar al tocar la sombra lateral
-    if (btnCloseSidebar) btnCloseSidebar.addEventListener('click', toggleMobileMenu); // <-- Cerrar con la X de arriba
+    if (btnCloseSidebar) btnCloseSidebar.addEventListener('click', toggleMobileMenu); // Cerrar con la X de arriba
 
     // ==========================================
-    // 5. CARGA DINÁMICA DEL MENÚ
+    // 5. CARGA DINÁMICA Y CLASIFICACIÓN DEL MENÚ
     // ==========================================
     async function loadMenu() {
-        let menus = [];
+        let modulosBrutos = [];
         try {
             const response = await fetch('/api/v1/menu', { headers: { 'Authorization': `Bearer ${token}` } });
             if (response.status === 401 || response.status === 403) {
@@ -110,21 +111,50 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.location.href = '/login.html';
                 return;
             }
-            if (response.ok) menus = await response.json();
+            if (response.ok) {
+                const data = await response.json();
+                // Aplanamos los datos por si la BD los manda agrupados de otra forma
+                if (data.length > 0 && data[0].modulos) {
+                    data.forEach(grupo => { modulosBrutos = modulosBrutos.concat(grupo.modulos); });
+                } else {
+                    modulosBrutos = data;
+                }
+            }
         } catch (error) { console.warn('Bypass de red activo.'); }
 
-        if ((!menus || menus.length === 0) && userData.perfil_id === 1) {
-            menus = [{
-                nombre_menu: "Configuración Inicial",
-                modulos: [
-                    { id: 1, nombre: "Módulo" },
-                    { id: 2, nombre: "Perfil" },
-                    { id: 3, nombre: "Usuario" },
-                    { id: 4, nombre: "Permisos-Perfil" }
-                ]
-            }];
+        // Salvavidas por si falla la red (Solo Admin)
+        if ((!modulosBrutos || modulosBrutos.length === 0) && userData.perfil_id === 1) {
+            modulosBrutos = [
+                { id: 1, nombre: "Módulo" }, { id: 2, nombre: "Perfil" },
+                { id: 3, nombre: "Usuario" }, { id: 4, nombre: "Permisos-Perfil" }
+            ];
         }
-        renderMenu(menus);
+
+        // --- AQUI CREAMOS LOS TÍTULOS (SUBMÓDULOS) ---
+        const grupoSeguridad = { nombre_menu: "Seguridad", modulos: [] };
+        const grupoPrincipal1 = { nombre_menu: "Principal 1", modulos: [] };
+        const grupoPrincipal2 = { nombre_menu: "Principal 2", modulos: [] };
+        const grupoOtros = { nombre_menu: "Otros Módulos", modulos: [] };
+
+        // Acomodamos cada módulo devuelto por la BD en su respectivo título
+        modulosBrutos.forEach(mod => {
+            const nombre = mod.nombre || mod.strNombreModulo; 
+
+            if (["Módulo", "Perfil", "Usuario", "Permisos-Perfil"].includes(nombre)) {
+                grupoSeguridad.modulos.push(mod);
+            } else if (nombre.startsWith("Principal 1")) {
+                grupoPrincipal1.modulos.push(mod);
+            } else if (nombre.startsWith("Principal 2")) {
+                grupoPrincipal2.modulos.push(mod);
+            } else {
+                grupoOtros.modulos.push(mod);
+            }
+        });
+
+        // Solo mostramos en el menú los títulos que tengan al menos 1 módulo asignado
+        const menuFinal = [grupoSeguridad, grupoPrincipal1, grupoPrincipal2, grupoOtros].filter(g => g.modulos.length > 0);
+
+        renderMenu(menuFinal);
     }
 
     function renderMenu(menus) {
